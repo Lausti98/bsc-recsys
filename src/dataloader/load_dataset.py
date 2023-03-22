@@ -31,6 +31,19 @@ def amazon(category, use_title=False):
 
   return df
 
+def book_crossing(use_title=False):
+  df = pd.read_csv(f'{DATA_RELATIVE_PATH}BX-Book-Ratings.csv',
+                  on_bad_lines='skip', 
+                  encoding_errors='replace',
+                  sep=';',
+                  skiprows=1,
+                  names=['user_id', 'item_id', 'rating'])
+
+  if use_title:
+    meta_df = pd.read_csv(f'{DATA_RELATIVE_PATH}raw/BX-Books.csv')
+    df['title'] = meta_df['Book-Title']
+
+  return df
 
 if __name__ == '__main__':
   a_df = amazon('amazon_fashion', use_title=True)
