@@ -2,15 +2,20 @@
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
 from sklearn.metrics.pairwise import cosine_similarity
+from daisy.model.KNNCFRecommender import convert_df
 from pandas.api.types import CategoricalDtype
 from scipy.sparse import csr_matrix
 
 class ItemKNN:
-  def __init__(self, K=10):
+  def __init__(self, config, K=10):
     self.K = K
     self.model = NearestNeighbors(n_neighbors=K, metric='cosine')
+    self.user_num = config['user_num']
+    self.item_num = config['item_num']
 
   def fit(self, X):
+    X = convert_df(self.user_num, self.item_num, X).T
+
     # Find mean user rating 
     sums = X.sum(axis=0)
     non_zeros = np.count_nonzero(X.toarray(), axis=0)
@@ -25,6 +30,10 @@ class ItemKNN:
     # Assign mean adjusted data to self
     self.data = X_transpose.transpose()
     self.user_offset = means[0,:]
+
+    # prediction matrix
+    self.pred_mat = cosine_similarity(self.data, self.data, dense_output=False).dot(X)
+
   
   def get_neighbors(self, X, verbose=False):
     """Get k closest neighbors by their cosine similarity"""
@@ -56,3 +65,37 @@ class ItemKNN:
     prediction = (rating/(dist.sum()+(dist.sum()==0.0))) + self.user_offset[0, user]
 
     return prediction if prediction != None else 0.0
+
+  def pred_from_mat(self, user, item):
+    return self.pred_mat[item, user]
+  
+  def rank(self, test_df):
+    t_users = test_df['user'].unique()
+    ranks = []
+    if len(t_users) > 1:
+      for user in t_users:
+        ranks.append(self.full_rank(user))
+    else:
+      ranks.append(self.full_rank(user))
+    
+    return np.array(ranks)
+    # cands_ids = np.arange(self.data.shape[0])
+    # # print(cands_ids)
+    # scores = self.pred_mat[cands_ids, user].A.squeeze()
+    # print(scores)
+    # rank_ids = np.argsort(-scores)[:self.K]
+    # print(np.argsort(-scores)[:self.K])
+    # # print(rank_ids)
+    # # print(np.arange(len(rank_ids)).reshape(-1, 1))
+    # # print(rank_ids.shape)
+    # tmp_arr = np.repeat(np.arange(len(rank_ids)), rank_ids.shape[1], axis=0)
+    # # print(tmp_arr)
+    # rank_list = cands_ids[np.repeat(np.arange(len(rank_ids)), rank_ids.shape[1], axis=0), rank_ids]
+
+
+  def full_rank(self, user):
+    scores = self.pred_mat[:, user].A.squeeze()
+    return np.argsort(-scores)[:self.K]
+  
+  def __str__(self) -> str:
+    return f'ItemKNN(K={self.K})'
