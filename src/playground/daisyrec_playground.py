@@ -88,8 +88,8 @@ baseline.fit(train)
 model = ItemKNNCF(config)
 model.fit(train)
 
-model2 = ItemKNN(K=config['topk'])
-model2.fit(inter_mat_train)
+model2 = ItemKNN(config, K=config['topk'])
+model2.fit(train)
 
 
 config['elastic'] = 0.1
@@ -170,7 +170,7 @@ base_met = NDCG(test_ur, np.array(bl_ranks), test_u)
 slim_met = NDCG(test_ur, np.array(slim_ranks), test_u)
 i2v_met = NDCG(test_ur, np.array(i2v_ranks), test_u)
 print(f'NDCG MostPop ranks: {base_met}')
-print(f'NDCG daisyRec ranks: {met1}')
+print(f'NDCG daisyRec ItemKNN ranks: {met1}')
 print(f'NDCG IKNN ranks: {met2}')
 print(f'NDCG SLiM ranks: {slim_met}')
 print(f'NDCG Item2Vec ranks: {i2v_met}')
