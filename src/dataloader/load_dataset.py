@@ -22,12 +22,10 @@ def amazon(category, use_title=False):
   df = pd.read_csv(f'{DATA_RELATIVE_PATH}{category}_rating_only.csv',
                   index_col=0,
                   skiprows=1,
-                  names=['user_id', 'item_id', 'rating'])
-  if use_title:
-    meta_df = pd.read_json(
-      f'{DATA_RELATIVE_PATH}raw/meta_{category}.json',
-      lines=True)
-    df['title'] = meta_df['title']
+                  names=['user_id', 'item_id', 'rating', 'title'])
+  
+  if not use_title:
+    df = df.drop(columns='title')
 
   return df
 
