@@ -34,7 +34,8 @@ config['title_col'] = 'title'
 mypath = '../../data/'
 files = [f for f in listdir(mypath) if isfile(join(mypath, f)) and f.endswith('.csv')]
 
-for f in files[1:]:
+for f in files[1:]: # TODO: CHANGE RANGE!!!
+  print(f)
   # Load dataset
   if 'BX' in f:
     df = load_dataset.book_crossing(use_title=True)
@@ -64,7 +65,8 @@ for f in files[1:]:
   total_train_ur = get_ur(train)
   config['train_ur'] = total_train_ur
 
-  models = [TFIDFKNN(config)]#,
+  models = [TFIDFKNN(config),
+            Word2VecKNN(config)]#,
             # item2vec.Item2VecRec(config)]
   
   test_u, test_ucands = build_candidates_set(test_ur, total_train_ur, config)
