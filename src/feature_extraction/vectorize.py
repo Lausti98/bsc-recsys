@@ -24,14 +24,18 @@ def remove_stop_and_punct(token_arr):
 
 def get_tf_idf(title_arr):
   """Returns a csr matrix with tf-idf vectorized titles"""
+  # Add empty string to missing titles
+  title_arr = title_arr.fillna("empty")
+  clean_tokens = [tokenize(i) for i in title_arr]
+  clean_text = [' '.join(sub_list) for sub_list in clean_tokens]
   vectorizer = TfidfVectorizer(stop_words='english')
-  csr = vectorizer.fit_transform(title_arr)
+  csr = vectorizer.fit_transform(clean_text)
   return csr
 
 def get_w2v(title_arr):
   clean_tokens = [tokenize(i) for i in title_arr]
   vectorizer = Word2Vec(clean_tokens)
-  return vectorizer
+  return vectorizer, clean_tokens
 
 if __name__ == '__main__':
   df = pd.read_csv('../../data/steam-200k.csv')
@@ -48,6 +52,8 @@ if __name__ == '__main__':
   # print(vec2.wv.key_to_index)
   # print(vec2.wv.most_similar(['fallout']))
   # print(vec2.wv.most_similar(['team', 'fortress', '2']))
-  # print(vec2.wv.most_similar(['fallout', 'new', 'vegas', 'couriers', 'stash']))
-  print(vec2.wv.n_similarity(['fallout', 'new', 'vegas', 'couriers', 'stash'], ['fallout', '3']))
-  print(vec2.wv.similarity('counter-strike', 'fallout'))
+  print(vec2.wv.most_similar(['fallout', 'new', 'vegas', 'couriers', 'stash']))
+  title_tokens = [tokenize(i) for i in df['title']]
+  for tt in title_tokens:
+    print(vec2.wv.n_similarity(['fallout', 'new', 'vegas', 'couriers', 'stash'], tt))
+  # print(vec2.wv.similarity('counter-strike', 'fallout'))
