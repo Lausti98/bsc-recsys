@@ -4,6 +4,7 @@ import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import LabelEncoder
 from gensim.models import Word2Vec
+import gensim.downloader
 import nltk
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
@@ -33,9 +34,19 @@ def get_tf_idf(title_arr):
   return csr
 
 def get_w2v(title_arr):
+  title_arr = title_arr.fillna("empty")
   clean_tokens = [tokenize(i) for i in title_arr]
   vectorizer = Word2Vec(clean_tokens)
   return vectorizer, clean_tokens
+
+def get_pretrained_w2v(title_arr):
+  title_arr = title_arr.fillna("empty")
+  model = gensim.downloader.load('glove-twitter-100')
+  # Clean title_tokens
+  title_arr = title_arr.fillna("empty")
+  clean_tokens = [tokenize(i) for i in title_arr]
+
+  return model, clean_tokens
 
 if __name__ == '__main__':
   df = pd.read_csv('../../data/steam-200k.csv')
