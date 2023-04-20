@@ -38,8 +38,13 @@ def book_crossing(use_title=False):
                   names=['user_id', 'item_id', 'rating'])
 
   if use_title:
-    meta_df = pd.read_csv(f'{DATA_RELATIVE_PATH}raw/BX-Books.csv')
-    df['title'] = meta_df['Book-Title']
+    meta_df = pd.read_csv(f'{DATA_RELATIVE_PATH}raw/BX-Books.csv',
+                          on_bad_lines='skip', 
+                          encoding_errors='replace',
+                          sep=';')
+    meta_df.rename(columns={'ISBN': 'item_id', 'Book-Title': 'title'}, inplace=True)
+    df = df.merge(meta_df[['item_id', 'title']], on='item_id', how='inner')
+    # df['title'] = meta_df['Book-Title']
 
   return df
 
