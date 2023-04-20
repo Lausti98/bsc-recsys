@@ -2,7 +2,7 @@
 import numpy as np
 import pandas as pd
 
-from src.feature_extraction.vectorize import get_tf_idf, get_w2v
+from src.feature_extraction.vectorize import get_tf_idf, get_w2v, get_pretrained_w2v
 
 from sklearn.neighbors import NearestNeighbors
 from sklearn.metrics.pairwise import cosine_similarity
@@ -134,26 +134,39 @@ class TFIDFKNN:
 
 
 class Word2VecKNN:
-  def __init__(self, config) -> None:
+  def __init__(self, config, pretrained=False) -> None:
     self.K = config['topk']
     self.maxk = config['maxk']
     self.title_col = config['title_col']
     self.user_num = config['user_num']
     self.item_num = config['item_num']
+    self.pretrained = pretrained
   
   def fit(self, X):
-
     _items = X.drop_duplicates(subset='item')
     unique_items = pd.DataFrame({'item': range(self.item_num)})
     
     unique_items = unique_items.merge(_items, on='item', how='outer')
+    print(unique_items.info())
+    unique_items.fillna("empty")
     unique_items.to_csv('unique_items.csv')
     # print(unique_items[self.title_col])
-    
+    # print(X.dtypes)
+
     # unique_items = X.drop_duplicates(subset='item')
-    self.w2v_model, self.title_tokens = get_w2v(unique_items[self.title_col])
+    if self.pretrained:
+      self.w2v_model, self.title_tokens = get_pretrained_w2v(unique_items[self.title_col])
+    else:
+      self.w2v_model, self.title_tokens = get_w2v(unique_items[self.title_col])
     # print(self.title_tokens)
 
+    self.sim_mat = np.zeros((self.item_num, self.item_num))
+    for idx, title in enumerate(self.title_tokens):
+      if len(title) == 0:
+          # print(title)
+        title = ['empty']
+      self.sim_mat[:,idx] = self._get_similarities(title)
+    # print(self.sim_mat)
     # fit interaction matrix
     interactions = convert_df(self.user_num, self.item_num, X).T
     self.interactions = interactions
@@ -164,21 +177,33 @@ class Word2VecKNN:
     sims = []
     for title in self.title_tokens:
       if title != title_tokens:
+        if len(title) == 0:
+          # print(title)
+          title = ['empty']
         # print(title)
-        sim = self.w2v_model.wv.n_similarity(title_tokens, title)
+        if self.pretrained:
+          sim = self.w2v_model.n_similarity(title_tokens, title)
+        else:
+          # print(title)
+          sim = self.w2v_model.wv.n_similarity(title_tokens, title)
         sims.append(sim)
+      else:
+        sims.append(0.0)
         # print(sim)
         #print(f'sim {title_tokens}, {title}: {sim}')
     
     return np.array(sims).reshape((1,-1))
 
 
-  def get_neighbors(self, X, verbose=False):
+  def get_neighbors(self, item, verbose=False):
     """Get k closest neighbors by their cosine similarity"""
 
     # Find similarities
+    similarities = self.sim_mat[item].reshape((1,-1))
+    #print(similarities)
     # similarities = self.w2v_model.wv.n_similarity(X, self.title_tokens)#, topn=self.maxk)
-    similarities = self._get_similarities(X)
+    # similarities1 = self._get_similarities(X)
+    # similarities2  = cosine_similarity(X, self.title_tokens)
     # print(similarities)
     # print(similarities.shape)
     # similarities = cosine_similarity(X, self.title_mat)
@@ -213,7 +238,7 @@ class Word2VecKNN:
     neighbors = []
     # print(self.get_neighbors(self.title_mat[items_rated_by_user, :]))
     for i in items_rated_by_user:
-      sim, neigh = self.get_neighbors(self.title_tokens[i])
+      sim, neigh = self.get_neighbors(i)
       similarities.append(sim)
       neighbors.append(neigh)
 
@@ -228,3 +253,6 @@ class Word2VecKNN:
 
     
     return neighbors
+  
+  def __str__(self) -> str:
+    return f'Word2Vec KNN(K={self.K}, pretrained={self.pretrained})'
