@@ -28,5 +28,11 @@ class SLiMRec:
     
     return np.array(ranks)
   
+  def set_params(self, alpha=None, elastic=None):
+    if alpha:
+      self.alpha=alpha
+    if elastic:
+      self.elastic=elastic
+    
   def __str__(self) -> str:
     return f'SLiMRec(elastic={self.elastic}, alpha={self.alpha})'
