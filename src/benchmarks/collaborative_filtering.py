@@ -6,11 +6,12 @@ from src.dataloader import load_dataset
 from src.preprocessing.data_filter import k_core_filter
 from src.preprocessing import preprocessor
 from src.algorithms import popularity, itemknn, slim, item2vec
+from src.model_tuning.model_tuning import grid_search
 from src.utils import result_visualizer
 
 from daisy.utils.config import init_config, init_seed, init_logger
 from daisy.utils.utils import get_ur, build_candidates_set
-from daisy.utils.metrics import NDCG, F1, Recall, Precision
+from daisy.utils.metrics import NDCG, F1, Recall, Precision, HR
 from logging import getLogger
 
 from sklearn.model_selection import train_test_split
@@ -31,7 +32,7 @@ config['topk'] = 100
 mypath = '../../data/'
 files = [f for f in listdir(mypath) if isfile(join(mypath, f)) and f.endswith('.csv')]
 
-for f in files[1:]:
+for f in files:#[1:]:
   # Load dataset
   if 'BX' in f:
     df = load_dataset.book_crossing()
@@ -70,22 +71,32 @@ for f in files[1:]:
   # metrics = ['n']
   results = {}
   results['dataset'] = f
-  results['metrics'] = ['NDCG', 'Precision', 'Recall', 'F1']
-  
+  results['metrics'] = ['NDCG_10', 'NDCG_20', 'NDCG', 'Precision_10', 'Precision_20', 'Precision', 'Recall', 'Hit-Rate_10', 'Hit-Rate_20']
+  param_grid = {'alpha': [1.0, 0.8, 0.6, 0.4, 0.2],
+                'elastic': [0.1, 0.3, 0.5, 0.7, 0.9]}
   p = []
   for m in models:
+    if isinstance(m, slim.SLiMRec):
+      best_params = grid_search(train, m, config, param_grid)
+      m.set_params(**best_params)
+      print(f'grid search best params: {best_params}')
     m.fit(train)
     ranks = m.rank(test)
 
-    # print(ranks[:10])
-    # ndcg_10 = NDCG(test_ur, ranks[:10], test_u)
-    # ndcg_20 = NDCG(test_ur, ranks[:20], test_u)
+    ranks_10 = ranks[:,:10]
+    ranks_20 = ranks[:,:20]
+    ndcg_10 = NDCG(test_ur, ranks_10, test_u)
+    ndcg_20 = NDCG(test_ur, ranks_20, test_u)
     # ndcg_50 = NDCG(test_ur, ranks[:50], test_u)
     ndcg_full = NDCG(test_ur, ranks, test_u)
+    precision_10 = Precision(test_ur, ranks_10, test_u)
+    precision_20 = Precision(test_ur, ranks_20, test_u)
     precision = Precision(test_ur, ranks, test_u)
     recall = Recall(test_ur, ranks, test_u)
-    f1 = F1(test_ur, ranks, test_u)
-    results[str(m)] = [ndcg_full, precision, recall, f1]
+    hr_10 = HR(test_ur, ranks_10, test_u)
+    hr_20 = HR(test_ur, ranks_20, test_u)
+    # f1 = F1(test_ur, ranks, test_u)
+    results[str(m)] = [ndcg_10, ndcg_20, ndcg_full, precision_10, precision_20, precision, recall, hr_10, hr_20]
 
   result_visualizer.build(results)
 
