@@ -9,15 +9,12 @@ from src.algorithms.slim import SLiMRec
 
 
 def grid_search(data, clf, config, param_grid, k_folds=5):
-  # print('performing grid_search')
   cv_stf = StratifiedKFold(n_splits=k_folds)
   best_score = 0
   best_params = None
   for values in product(*param_grid.values()):
     dct = dict(zip(param_grid.keys(), values))
-    # print(clf)
     clf.set_params(**dct)
-    # print(clf)
     for train_index, test_index in cv_stf.split(data.drop(columns='rating'), data['rating']):
       train_df = data.iloc[train_index]#, 
       test_df = data.iloc[test_index]
@@ -30,7 +27,6 @@ def grid_search(data, clf, config, param_grid, k_folds=5):
       ranks_10 = ranks[:,:10]
       ndcg_10 = NDCG(test_ur, ranks_10, test_u)
       if ndcg_10 > best_score:
-        # print(f'new best score, params = {dct}')
         best_score = ndcg_10
         best_params = dct
   

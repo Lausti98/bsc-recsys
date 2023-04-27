@@ -9,11 +9,7 @@ class Popularity:
 
   def fit(self, X):
     #TODO: Do checks on the input DF/Interactionmatrix
-    
-    # self.data = X
-    # item_interaction_counts = X.groupby(["item_id"])["item_id"].count().nlargest(self.K) 
-    # self.topk = item_interaction_counts / len(X)
-    # print(self.topk)
+
     self.model.fit(X)
   
   def predict(self, X, user):

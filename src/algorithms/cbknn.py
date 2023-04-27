@@ -23,44 +23,15 @@ class TFIDFKNN:
   def fit(self, X):
     # Use the title column and vectorize
     ### 
-    # 1. Get items the user liked / disliked 
-    # 2. Get similarities of items the user liked in the past
     interactions = convert_df(self.user_num, self.item_num, X).T
     _items = X.drop_duplicates(subset='item')
     unique_items = pd.DataFrame({'item': range(self.item_num)})
     
     unique_items = unique_items.merge(_items, on='item', how='outer')
     
-    # unique_items = X.drop_duplicates(subset='item')
     self.title_mat = get_tf_idf(unique_items[self.title_col])
 
-
-    # prediction matrix
-    # self.pred_mat = cosine_similarity(X, X, dense_output=False).dot(X)
-    # print(self.pred_mat)s
-    # print(self.pred_mat.shape)
     self.interactions = interactions
-
-    # X = convert_df(self.user_num, self.item_num, X).T
-
-    # # Find mean user rating 
-    # sums = X.sum(axis=0)
-    # non_zeros = np.count_nonzero(X.toarray(), axis=0)
-    # means = sums.flatten() / (non_zeros+(non_zeros==0)) # Account for possible divide by 0
-
-    # # Adjust ratings by means
-    # X_transpose = X.transpose() 
-    # nz = X_transpose.nonzero()
-    # X_transpose = X_transpose.astype('float64')
-    # X_transpose[nz] -= means[0, nz[0]]
-
-    # # Assign mean adjusted data to self
-    # self.data = X_transpose.transpose()
-    # self.user_offset = means[0,:]
-
-    # # prediction matrix
-    # self.pred_mat = cosine_similarity(self.data, self.data, dense_output=False).dot(X)
-
   
   def get_neighbors(self, X, verbose=False):
     """Get k closest neighbors by their cosine similarity"""
@@ -108,12 +79,11 @@ class TFIDFKNN:
 
   def full_rank(self, user):
     items_rated_by_user = self.interactions[:, user].A.squeeze().nonzero()[0]
-    # print(items_rated_by_user)
     if len(items_rated_by_user) == 0:
       items_rated_by_user = np.array([0])
+
     similarities = []
     neighbors = []
-    # print(self.get_neighbors(self.title_mat[items_rated_by_user, :]))
     for i in items_rated_by_user:
       sim, neigh = self.get_neighbors(self.title_mat[i])
       similarities.append(sim)
@@ -134,39 +104,35 @@ class TFIDFKNN:
 
 
 class Word2VecKNN:
-  def __init__(self, config, pretrained=False) -> None:
+  def __init__(self, config, pretrained=False, similarity_method='cosine') -> None:
     self.K = config['topk']
     self.maxk = config['maxk']
     self.title_col = config['title_col']
     self.user_num = config['user_num']
     self.item_num = config['item_num']
     self.pretrained = pretrained
+    self.similarity_method = similarity_method
   
   def fit(self, X):
     _items = X.drop_duplicates(subset='item')
     unique_items = pd.DataFrame({'item': range(self.item_num)})
     
     unique_items = unique_items.merge(_items, on='item', how='outer')
-    print(unique_items.info())
     unique_items.fillna("empty")
     unique_items.to_csv('unique_items.csv')
-    # print(unique_items[self.title_col])
-    # print(X.dtypes)
 
     # unique_items = X.drop_duplicates(subset='item')
-    if self.pretrained:
+    if self.pretrained or self.similarity_method == 'wordmover':
       self.w2v_model, self.title_tokens = get_pretrained_w2v(unique_items[self.title_col])
     else:
       self.w2v_model, self.title_tokens = get_w2v(unique_items[self.title_col])
-    # print(self.title_tokens)
 
     self.sim_mat = np.zeros((self.item_num, self.item_num))
     for idx, title in enumerate(self.title_tokens):
       if len(title) == 0:
-          # print(title)
         title = ['empty']
       self.sim_mat[:,idx] = self._get_similarities(title)
-    # print(self.sim_mat)
+    
     # fit interaction matrix
     interactions = convert_df(self.user_num, self.item_num, X).T
     self.interactions = interactions
@@ -178,19 +144,12 @@ class Word2VecKNN:
     for title in self.title_tokens:
       if title != title_tokens:
         if len(title) == 0:
-          # print(title)
           title = ['empty']
-        # print(title)
-        if self.pretrained:
-          sim = self.w2v_model.n_similarity(title_tokens, title)
-        else:
-          # print(title)
-          sim = self.w2v_model.wv.n_similarity(title_tokens, title)
+        
+        sim = self._switch_similarity_method(title_tokens, title)
         sims.append(sim)
       else:
         sims.append(0.0)
-        # print(sim)
-        #print(f'sim {title_tokens}, {title}: {sim}')
     
     return np.array(sims).reshape((1,-1))
 
@@ -200,15 +159,8 @@ class Word2VecKNN:
 
     # Find similarities
     similarities = self.sim_mat[item].reshape((1,-1))
-    #print(similarities)
-    # similarities = self.w2v_model.wv.n_similarity(X, self.title_tokens)#, topn=self.maxk)
-    # similarities1 = self._get_similarities(X)
-    # similarities2  = cosine_similarity(X, self.title_tokens)
-    # print(similarities)
-    # print(similarities.shape)
-    # similarities = cosine_similarity(X, self.title_mat)
     index_arr = np.argsort(similarities, axis=1).flatten()[::-1] #reverse sorted array for descending order
-    # print(index_arr)
+
     # Get K neighbors from similarities
     neighbors = index_arr[:self.maxk]
     distances = np.take(similarities, neighbors)
@@ -231,12 +183,12 @@ class Word2VecKNN:
   
   def full_rank(self, user):
     items_rated_by_user = self.interactions[:, user].A.squeeze().nonzero()[0]
-    # print(items_rated_by_user)
+    
     if len(items_rated_by_user) == 0:
       items_rated_by_user = np.array([0])
+    
     similarities = []
     neighbors = []
-    # print(self.get_neighbors(self.title_mat[items_rated_by_user, :]))
     for i in items_rated_by_user:
       sim, neigh = self.get_neighbors(i)
       similarities.append(sim)
@@ -253,6 +205,16 @@ class Word2VecKNN:
 
     
     return neighbors
+  
+  def _switch_similarity_method(self, title_tokens, title):
+    if self.similarity_method == 'wordmover':
+      sim = self.w2v_model.wmdistance(title_tokens, title)
+    elif self.pretrained:
+      sim = self.w2v_model.n_similarity(title_tokens, title)
+    else:
+      sim = self.w2v_model.wv.n_similarity(title_tokens, title)
+    
+    return sim
   
   def __str__(self) -> str:
     return f'Word2Vec KNN(K={self.K}, pretrained={self.pretrained})'

@@ -79,18 +79,6 @@ class ItemKNN:
       ranks.append(self.full_rank(user))
     
     return np.array(ranks)
-    # cands_ids = np.arange(self.data.shape[0])
-    # # print(cands_ids)
-    # scores = self.pred_mat[cands_ids, user].A.squeeze()
-    # print(scores)
-    # rank_ids = np.argsort(-scores)[:self.K]
-    # print(np.argsort(-scores)[:self.K])
-    # # print(rank_ids)
-    # # print(np.arange(len(rank_ids)).reshape(-1, 1))
-    # # print(rank_ids.shape)
-    # tmp_arr = np.repeat(np.arange(len(rank_ids)), rank_ids.shape[1], axis=0)
-    # # print(tmp_arr)
-    # rank_list = cands_ids[np.repeat(np.arange(len(rank_ids)), rank_ids.shape[1], axis=0), rank_ids]
 
 
   def full_rank(self, user):

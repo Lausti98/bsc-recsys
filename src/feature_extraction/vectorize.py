@@ -55,16 +55,5 @@ if __name__ == '__main__':
   encoder = LabelEncoder()
   df['user_id'] = encoder.fit_transform(df['user_id'])
   df['item_id'] = encoder.fit_transform(df['title'])
-  #vec1 = get_tf_idf(df['title'])
   vec2 = get_w2v(df['title'])
-  # print(df.dtypes)
-  # print(df.shape)
-  # #print(vec1)
-  # print(vec2.wv.key_to_index)
-  # print(vec2.wv.most_similar(['fallout']))
-  # print(vec2.wv.most_similar(['team', 'fortress', '2']))
-  print(vec2.wv.most_similar(['fallout', 'new', 'vegas', 'couriers', 'stash']))
   title_tokens = [tokenize(i) for i in df['title']]
-  for tt in title_tokens:
-    print(vec2.wv.n_similarity(['fallout', 'new', 'vegas', 'couriers', 'stash'], tt))
-  # print(vec2.wv.similarity('counter-strike', 'fallout'))
