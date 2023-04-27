@@ -22,6 +22,7 @@ config['algo_name'] = 'itemknn'
 init_seed(config['seed'], config['reproducibility'])
 
 ''' init logger '''
+config['state'] = 'warning' # silence info logs
 init_logger(config)
 logger = getLogger()
 # logger.info(config)
