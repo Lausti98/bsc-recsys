@@ -81,13 +81,22 @@ class TFIDFKNN:
     items_rated_by_user = self.interactions[:, user].A.squeeze().nonzero()[0]
     if len(items_rated_by_user) == 0:
       items_rated_by_user = np.array([0])
+      user_embedding = np.zeros(self.title_mat.shape[1])
+    else:
+      item_vectors = self.title_mat[items_rated_by_user].A
+      user_ratings = self.interactions[items_rated_by_user, user].A.squeeze()
+      if user_ratings.size == 1:
+        user_ratings = np.array([user_ratings])
+      
+      user_embedding = item_vectors * user_ratings[:, np.newaxis]
+      user_embedding = np.mean(user_embedding, axis=0)
 
     similarities = []
     neighbors = []
-    for i in items_rated_by_user:
-      sim, neigh = self.get_neighbors(self.title_mat[i])
-      similarities.append(sim)
-      neighbors.append(neigh)
+    # for i in items_rated_by_user:
+    sim, neigh = self.get_neighbors(user_embedding.reshape(1,-1))
+    similarities.append(sim)
+    neighbors.append(neigh)
 
     similarities = [item for sublist in similarities for item in sublist]
     neighbors = [item for sublist in neighbors for item in sublist]
@@ -98,6 +107,16 @@ class TFIDFKNN:
     index_arr = np.argsort(similarities).flatten()[::-1]
     neighbors = neighbors[index_arr[:self.K]]
     return neighbors
+  
+  
+  def get_user_embeddings(self, users):
+    for user in users:
+      items_rated_by_user = self.interactions[:, user].A.squeeze().nonzero()[0]
+    if len(items_rated_by_user) == 0:
+      items_rated_by_user = np.array([0])
+    item_vectors = self.title_mat[items_rated_by_user]
+    print(item_vectors)
+    user_ratings = self.interactions[items_rated_by_user, user].A.squeeze()
   
   def __str__(self) -> str:
     return f'content based TF-IDF KNN(K={self.K})'
@@ -121,21 +140,28 @@ class Word2VecKNN:
     unique_items.fillna("empty")
     unique_items.to_csv('unique_items.csv')
 
+    # fit interaction matrix
+    interactions = convert_df(self.user_num, self.item_num, X).T
+    self.interactions = interactions
+
     # unique_items = X.drop_duplicates(subset='item')
     if self.pretrained or self.similarity_method == 'wordmover':
       self.w2v_model, self.title_tokens = get_pretrained_w2v(unique_items[self.title_col])
     else:
       self.w2v_model, self.title_tokens = get_w2v(unique_items[self.title_col])
 
-    self.sim_mat = np.zeros((self.item_num, self.item_num))
-    for idx, title in enumerate(self.title_tokens):
-      if len(title) == 0:
-        title = ['empty']
-      self.sim_mat[:,idx] = self._get_similarities(title)
-    
-    # fit interaction matrix
-    interactions = convert_df(self.user_num, self.item_num, X).T
-    self.interactions = interactions
+    self.sim_mat = np.zeros((self.item_num, self.user_num))
+    # for idx, title in enumerate(self.title_tokens):
+    for idx in range(self.user_num):
+      print(f"getting item-similarities for user {idx}")
+      items_rated_by_user = self.interactions[:, idx].A.squeeze().nonzero()[0]
+      # print(items_rated_by_user)
+      item_vectors = [self.title_tokens[i] for i in items_rated_by_user]
+      user_embedding = [token for sublist in item_vectors for token in sublist] 
+      # print(user_embedding)
+      if len(user_embedding) == 0:
+        user_embedding = ['empty']
+      self.sim_mat[:,idx] = self._get_similarities(user_embedding)
     
 
   def _get_similarities(self, title_tokens):
@@ -184,15 +210,25 @@ class Word2VecKNN:
   def full_rank(self, user):
     items_rated_by_user = self.interactions[:, user].A.squeeze().nonzero()[0]
     
-    if len(items_rated_by_user) == 0:
-      items_rated_by_user = np.array([0])
+    # if len(items_rated_by_user) == 0:
+    #   items_rated_by_user = np.array([0])
+    #   user_embedding = np.array(['empty'])
+    # else:
+    #   item_vectors = self.title_tokens[items_rated_by_user].A
+    #   # user_ratings = self.interactions[items_rated_by_user, user].A.squeeze()
+    #   # if user_ratings.size == 1:
+    #   #   user_ratings = np.array([user_ratings])
+      
+    #   # user_embedding = item_vectors * user_ratings[:, np.newaxis]
+    #   # user_embedding = np.mean(user_embedding, axis=0)
+    #   user_embedding = item_vectors.ravel()
     
     similarities = []
     neighbors = []
-    for i in items_rated_by_user:
-      sim, neigh = self.get_neighbors(i)
-      similarities.append(sim)
-      neighbors.append(neigh)
+    # for i in items_rated_by_user:
+    sim, neigh = self.get_neighbors(user)
+    similarities.append(sim)
+    neighbors.append(neigh)
 
     similarities = [item for sublist in similarities for item in sublist]
     neighbors = [item for sublist in neighbors for item in sublist]
