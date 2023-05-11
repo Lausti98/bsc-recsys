@@ -1,6 +1,7 @@
 from sklearn.model_selection import StratifiedKFold
 from itertools import product
 import pandas as pd
+import numpy as np
 
 from daisy.utils.utils import get_ur, build_candidates_set
 from daisy.utils.metrics import NDCG, F1, Recall, Precision, HR
@@ -15,6 +16,7 @@ def grid_search(data, clf, config, param_grid, k_folds=5):
   for values in product(*param_grid.values()):
     dct = dict(zip(param_grid.keys(), values))
     clf.set_params(**dct)
+    scores = []
     for train_index, test_index in cv_stf.split(data.drop(columns='rating'), data['rating']):
       train_df = data.iloc[train_index]#, 
       test_df = data.iloc[test_index]
@@ -26,9 +28,12 @@ def grid_search(data, clf, config, param_grid, k_folds=5):
       ranks = clf.rank(test_df)
       ranks_10 = ranks[:,:10]
       ndcg_10 = NDCG(test_ur, ranks_10, test_u)
-      if ndcg_10 > best_score:
-        best_score = ndcg_10
-        best_params = dct
+      scores.append(ndcg_10)
+    
+    mean_score = np.array(scores).mean()
+    if mean_score > best_score:
+      best_score = mean_score
+      best_params = dct
   
   return best_params
 
