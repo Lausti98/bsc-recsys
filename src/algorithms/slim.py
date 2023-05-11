@@ -6,6 +6,7 @@ class SLiMRec:
   def __init__(self, config, elastic=0.1, alpha=1.0):
     config['elastic'] = elastic
     config['alpha'] = alpha
+    self.config = config
     self.elastic = elastic
     self.alpha = alpha
     self.model = SLiM(config)
@@ -30,9 +31,12 @@ class SLiMRec:
   
   def set_params(self, alpha=None, elastic=None):
     if alpha:
-      self.alpha=alpha
+      self.alpha = alpha
+      self.config['alpha'] = alpha
     if elastic:
-      self.elastic=elastic
+      self.elastic = elastic
+      self.config['elastic'] = elastic
+    self.model = SLiM(self.config)
     
   def __str__(self) -> str:
     return f'SLiMRec(elastic={self.elastic}, alpha={self.alpha})'
