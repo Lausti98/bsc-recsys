@@ -32,7 +32,9 @@ class ItemKNN:
     self.user_offset = means[0,:]
 
     # prediction matrix
-    self.pred_mat = cosine_similarity(self.data, self.data, dense_output=False).dot(X)
+    #item_similarities = cosine_similarity(self.data, self.data, dense_output=False)
+    item_similarities = self._topk_similaritites()
+    self.pred_mat = item_similarities.dot(X)
 
   
   def get_neighbors(self, X, verbose=False):
@@ -81,9 +83,28 @@ class ItemKNN:
     return np.array(ranks)
 
 
+  def _topk_similaritites(self):
+    #TODO: FIX THIS
+    sims = cosine_similarity(self.data, self.data, dense_output=False).tolil()
+    for i in range(sims.shape[0]):
+      row = sims.getrow(i).toarray()[0]
+      sorted_indices = row.argsort()[::-1]
+      topk_indices = sorted_indices[:self.K]
+      for j in range(sims.shape[1]):
+          if j not in topk_indices:
+              sims[i,j] = 0
+    # sims.eliminate_zeros()
+    return sims.tocsr()
+
+
+
   def full_rank(self, user):
     scores = self.pred_mat[:, user].A.squeeze()
     return np.argsort(-scores)[:self.K]
   
+
+  def set_params(self, K=10):
+    self.K = K
+
   def __str__(self) -> str:
     return f'ItemKNN(K={self.K})'
