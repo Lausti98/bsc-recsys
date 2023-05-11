@@ -2,7 +2,9 @@
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder
 
-DATA_RELATIVE_PATH = '../../data/'
+from src.utils import utils
+
+DATA_RELATIVE_PATH = f'{utils.get_base_path()}data/'
 STEAM_DATASET_PATH = 'steam-200k.csv'
 
 def steam(use_title=False):
@@ -47,6 +49,19 @@ def book_crossing(use_title=False):
     # df['title'] = meta_df['Book-Title']
 
   return df
+
+
+def load_by_filepath(f_path):
+  if 'BX' in f_path:
+    df = book_crossing()
+  else:
+    if 'rating_only' in f_path:
+      df = amazon(f_path[:-16])
+    elif 'steam' in f_path:
+      df = steam()
+  
+  return df
+    
 
 if __name__ == '__main__':
   a_df = amazon('amazon_fashion', use_title=True)
