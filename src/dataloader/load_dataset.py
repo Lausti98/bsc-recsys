@@ -51,14 +51,14 @@ def book_crossing(use_title=False):
   return df
 
 
-def load_by_filepath(f_path):
+def load_by_filepath(f_path, use_title=False):
   if 'BX' in f_path:
-    df = book_crossing()
+    df = book_crossing(use_title=use_title)
   else:
     if 'rating_only' in f_path:
-      df = amazon(f_path[:-16])
+      df = amazon(f_path[:-16], use_title=use_title)
     elif 'steam' in f_path:
-      df = steam()
+      df = steam(use_title=use_title)
   
   return df
     
