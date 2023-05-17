@@ -18,11 +18,8 @@ class TFIDFKNN:
     self.title_col = config['title_col']
     self.user_num = config['user_num']
     self.item_num = config['item_num']
-    # self.vectorizer = config['vectorizer']
 
   def fit(self, X):
-    # Use the title column and vectorize
-    ### 
     interactions = convert_df(self.user_num, self.item_num, X).T
     _items = X.drop_duplicates(subset='item')
     unique_items = pd.DataFrame({'item': range(self.item_num)})
@@ -93,7 +90,6 @@ class TFIDFKNN:
 
     similarities = []
     neighbors = []
-    # for i in items_rated_by_user:
     sim, neigh = self.get_neighbors(user_embedding.reshape(1,-1))
     similarities.append(sim)
     neighbors.append(neigh)
@@ -109,17 +105,17 @@ class TFIDFKNN:
     return neighbors
   
   
-  def get_user_embeddings(self, users):
-    for user in users:
-      items_rated_by_user = self.interactions[:, user].A.squeeze().nonzero()[0]
-    if len(items_rated_by_user) == 0:
-      items_rated_by_user = np.array([0])
-    item_vectors = self.title_mat[items_rated_by_user]
-    print(item_vectors)
-    user_ratings = self.interactions[items_rated_by_user, user].A.squeeze()
+  # def get_user_embeddings(self, users):
+  #   for user in users:
+  #     items_rated_by_user = self.interactions[:, user].A.squeeze().nonzero()[0]
+  #   if len(items_rated_by_user) == 0:
+  #     items_rated_by_user = np.array([0])
+  #   item_vectors = self.title_mat[items_rated_by_user]
+  #   print(item_vectors)
+  #   user_ratings = self.interactions[items_rated_by_user, user].A.squeeze()
   
   def __str__(self) -> str:
-    return f'content based TF-IDF KNN(K={self.K})'
+    return f'content based TF-IDF(K={self.K})'
 
 
 class Word2VecKNN:
@@ -149,19 +145,6 @@ class Word2VecKNN:
       self.w2v_model, self.title_tokens = get_pretrained_w2v(unique_items[self.title_col])
     else:
       self.w2v_model, self.title_tokens = get_w2v(unique_items[self.title_col])
-
-    self.sim_mat = np.zeros((self.item_num, self.user_num))
-    # for idx, title in enumerate(self.title_tokens):
-    for idx in range(self.user_num):
-      print(f"getting item-similarities for user {idx}")
-      items_rated_by_user = self.interactions[:, idx].A.squeeze().nonzero()[0]
-      # print(items_rated_by_user)
-      item_vectors = [self.title_tokens[i] for i in items_rated_by_user]
-      user_embedding = [token for sublist in item_vectors for token in sublist] 
-      # print(user_embedding)
-      if len(user_embedding) == 0:
-        user_embedding = ['empty']
-      self.sim_mat[:,idx] = self._get_similarities(user_embedding)
     
 
   def _get_similarities(self, title_tokens):
@@ -180,11 +163,19 @@ class Word2VecKNN:
     return np.array(sims).reshape((1,-1))
 
 
-  def get_neighbors(self, item, verbose=False):
+  def get_neighbors(self, user, verbose=False):
     """Get k closest neighbors by their cosine similarity"""
+    items_rated_by_user = self.interactions[:, user].A.squeeze().nonzero()[0]
+  
+    # Make vector from all titles rated by user
+    item_vectors = [self.title_tokens[i] for i in items_rated_by_user]
+    user_embedding = [token for sublist in item_vectors for token in sublist] 
+  
+    if len(user_embedding) == 0:
+      user_embedding = ['empty']
+    similarities = self._get_similarities(user_embedding)
 
     # Find similarities
-    similarities = self.sim_mat[item].reshape((1,-1))
     index_arr = np.argsort(similarities, axis=1).flatten()[::-1] #reverse sorted array for descending order
 
     # Get K neighbors from similarities
@@ -253,4 +244,4 @@ class Word2VecKNN:
     return sim
   
   def __str__(self) -> str:
-    return f'Word2Vec KNN(K={self.K}, pretrained={self.pretrained})'
+    return f'Word2Vec (K={self.K}, pretrained={self.pretrained})'
