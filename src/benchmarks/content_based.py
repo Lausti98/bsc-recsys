@@ -1,13 +1,13 @@
+# pylint: skip-file
 from os import listdir
 from os.path import isfile, join
-import numpy as np
 
 from src.dataloader import load_dataset
 from src.preprocessing.data_filter import k_core_filter
 from src.preprocessing import preprocessor
-# from src.algorithms import popularity, itemknn, slim, item2vec
 from src.algorithms.cbknn import TFIDFKNN, Word2VecKNN
 from src.utils import result_visualizer
+from src.utils.utils import get_csv_data_files
 
 from daisy.utils.config import init_config, init_seed, init_logger
 from daisy.utils.utils import get_ur, build_candidates_set
@@ -16,7 +16,6 @@ from logging import getLogger
 
 from sklearn.model_selection import train_test_split
 config = init_config()
-config['algo_name'] = 'itemknn'
 
 ''' init seed for reproducibility '''
 init_seed(config['seed'], config['reproducibility'])
@@ -28,16 +27,14 @@ logger = getLogger()
 logger.warn(config)
 config['logger'] = logger
 config['topk'] = 50
-config['maxk'] = 100
+config['maxk'] = 150
 config['title_col'] = 'title'
 
 '''Load and process datasets...'''
-mypath = '../../data/'
-files = [f for f in listdir(mypath) if isfile(join(mypath, f)) and f.endswith('.csv')]
+files = get_csv_data_files()
 
-for f in files[1:]: # TODO: CHANGE RANGE!!!
+for f in files[4:]: # TODO: CHANGE RANGE!!!
   print(f)
-  # Load dataset
   if 'BX' in f:
     df = load_dataset.book_crossing(use_title=True)
     df = preprocessor.proces(df, k_filter=10)
@@ -53,11 +50,6 @@ for f in files[1:]: # TODO: CHANGE RANGE!!!
   config['user_num'] = int(user_num)
   config['item_num'] = int(item_num)
   config['cand_num'] = int(item_num) # Use all items as candidate ranking
-  # config['maxk'] = 100
-  # config['topk'] = 50
-  # config['shrink'] = 0.0
-  # config['similarity'] = 'adjusted'
-  # config['normalize'] = False
 
   train, test = train_test_split(df, train_size=0.7, random_state=1)
 
@@ -68,12 +60,11 @@ for f in files[1:]: # TODO: CHANGE RANGE!!!
 
   models = [
             TFIDFKNN(config),
-            Word2VecKNN(config),
             Word2VecKNN(config, pretrained=True)
           ]
   
   test_u, test_ucands = build_candidates_set(test_ur, total_train_ur, config)
-  # metrics = ['n']
+
   results = {}
   results['dataset'] = f
   results['metrics'] = ['NDCG_10', 'NDCG_20', 'NDCG', 'Precision_10', 'Precision_20', 'Precision', 'Recall', 'Hit-Rate_10', 'Hit-Rate_20']

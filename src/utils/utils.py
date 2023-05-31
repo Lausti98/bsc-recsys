@@ -1,3 +1,4 @@
+#pylint: skip-file
 """Module contains various utility functions"""
 import os
 from os import listdir

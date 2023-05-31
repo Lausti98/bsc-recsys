@@ -1,3 +1,4 @@
+# pylint: skip-file
 from sklearn.model_selection import StratifiedKFold
 from itertools import product
 import pandas as pd
@@ -9,7 +10,7 @@ from daisy.utils.metrics import NDCG, F1, Recall, Precision, HR
 from src.algorithms.slim import SLiMRec
 
 
-def grid_search(data, clf, config, param_grid, k_folds=5):
+def grid_search(data, clf, config, param_grid, k_folds=5, verbose=False):
   cv_stf = StratifiedKFold(n_splits=k_folds)
   best_score = 0
   best_params = None
@@ -34,6 +35,8 @@ def grid_search(data, clf, config, param_grid, k_folds=5):
     if mean_score > best_score:
       best_score = mean_score
       best_params = dct
+    if verbose:
+      print(f'{str(clf)} - score: {mean_score} - best score: {best_score}')
   
   return best_params
 
