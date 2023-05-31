@@ -9,7 +9,7 @@ STEAM_DATASET_PATH = 'steam-200k.csv'
 
 def steam(use_title=False):
   df = pd.read_csv(f'{DATA_RELATIVE_PATH}{STEAM_DATASET_PATH}')
-  df = df[df.iloc[:, 2].astype('string') == 'play']
+  df = df[df.iloc[:, 2].astype('string') == 'purchase']
   df = df.iloc[:, [0,1,3]]
   df.columns.values[0:3] =['user_id', 'title', 'rating']
   encoder = LabelEncoder()
@@ -38,7 +38,7 @@ def book_crossing(use_title=False):
                   sep=';',
                   skiprows=1,
                   names=['user_id', 'item_id', 'rating'])
-
+  df['rating'] = df['rating'].astype('int8')
   if use_title:
     meta_df = pd.read_csv(f'{DATA_RELATIVE_PATH}raw/BX-Books.csv',
                           on_bad_lines='skip', 
