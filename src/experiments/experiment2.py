@@ -1,3 +1,4 @@
+# pylint: skip-file
 """
   Module performs experiment where the datasets are filtered by users that
   have 1 interaction, 2 interactions and so forth while doing testing
@@ -63,9 +64,9 @@ if __name__ == '__main__':
 
       print('initializing model')
       # initialize model
-      model = itemknn.ItemKNN(config, K=config['topk'])
+      # model = itemknn.ItemKNN(config, K=config['topk'])
       # model = slim.SLiMRec(config, elastic=0.1, alpha=0.2)
-      # model = cbknn.TFIDFKNN(config)
+      model = cbknn.TFIDFKNN(config)
       # model = cbknn.Word2VecKNN(config, pretrained=True)
       print('fitting model')
       model.fit(train)

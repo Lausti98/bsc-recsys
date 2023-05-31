@@ -75,7 +75,7 @@ if __name__ == '__main__':
   logger.info(config)
   config['logger'] = logger
   config['topk'] = 50
-  config['maxk'] = 100
+  config['maxk'] = 150
   config['title_col'] = 'title'
 
 
@@ -109,13 +109,13 @@ if __name__ == '__main__':
     model.fit(train)
     print('model fitted')
 
-    for x in range(7,15):
+    for x in range(2,15):
       results = {}
       results['dataset'] = f
       results['metrics'] = ['NDCG_10', 'NDCG_20', 'NDCG', 'Precision_10', 'Precision_20', 'Precision', 'Recall', 'Hit-Rate_10', 'Hit-Rate_20']
       print(f'ranking for num interactions: {x}')
       # filter the users in test set with x num
-      filtered_test = filter_num_interactions_df(df, test, x, user=True)
+      filtered_test = filter_num_interactions_df(df, test, x, user=False)
       if len(filtered_test) > 0:
         # Ground truths
         test_ur = get_ur(filtered_test)
