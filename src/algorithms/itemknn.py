@@ -5,15 +5,24 @@ from sklearn.metrics.pairwise import cosine_similarity
 from daisy.model.KNNCFRecommender import convert_df
 from pandas.api.types import CategoricalDtype
 from scipy.sparse import csr_matrix
+from sklearn.preprocessing import MinMaxScaler
+
 
 class ItemKNN:
-  def __init__(self, config, K=10):
+  def __init__(self, config, K=10, scale=False):
     self.K = K
     self.model = NearestNeighbors(n_neighbors=K, metric='cosine')
     self.user_num = config['user_num']
     self.item_num = config['item_num']
+    self.scale = scale
 
   def fit(self, X):
+    self.X = X.copy()
+    if self.scale:
+      scaler = MinMaxScaler()
+      self.X['rating'] = scaler.fit_transform(
+        self.X['rating'].values.reshape(-1,1))
+
     X = convert_df(self.user_num, self.item_num, X).T
 
     # Find mean user rating 
@@ -55,21 +64,24 @@ class ItemKNN:
 
     return distances, neighbors
   
-  def predict(self, X, user):
+  def predict(self, user, item=None):
 
-    # Get the nearest neighbors
-    dist, neighbors = self.get_neighbors(X)
+  #   # Get the nearest neighbors
+  #   dist, neighbors = self.get_neighbors(item)
 
-    # Calculate prediction based on neighbors
-    rating = 0
-    for d, n in zip(dist, neighbors):
-      rating += self.data[n,user]*d
-    prediction = (rating/(dist.sum()+(dist.sum()==0.0))) + self.user_offset[0, user]
+  #   # Calculate prediction based on neighbors
+  #   rating = 0
+  #   for d, n in zip(dist, neighbors):
+  #     rating += self.data[n,user]*d
+  #   prediction = (rating/(dist.sum()+(dist.sum()==0.0))) + self.user_offset[0, user]
 
-    return prediction if prediction != None else 0.0
+  #   return prediction if prediction != None else 0.0
 
-  def pred_from_mat(self, user, item):
-    return self.pred_mat[item, user]
+  # def pred_from_mat(self, user, item):
+    if item:
+      return self.pred_mat[item, user]
+    else:
+      return self.pred_mat[:, user].A.squeeze()
   
   def rank(self, test_df):
     t_users = test_df['user'].unique()
@@ -78,13 +90,12 @@ class ItemKNN:
       for user in t_users:
         ranks.append(self.full_rank(user))
     else:
-      ranks.append(self.full_rank(user))
+      ranks.append(self.full_rank(test_df['user']))
     
     return np.array(ranks)
 
 
   def _topk_similaritites(self):
-    #TODO: FIX THIS
     sims = cosine_similarity(self.data, self.data, dense_output=False).tolil()
     for i in range(sims.shape[0]):
       row = sims.getrow(i).toarray()[0]
@@ -93,7 +104,6 @@ class ItemKNN:
       for j in range(sims.shape[1]):
           if j not in topk_indices:
               sims[i,j] = 0
-    # sims.eliminate_zeros()
     return sims.tocsr()
 
 
