@@ -33,7 +33,7 @@ config['title_col'] = 'title'
 '''Load and process datasets...'''
 files = get_csv_data_files()
 
-for f in files[4:]: # TODO: CHANGE RANGE!!!
+for f in files[0:]: # TODO: CHANGE RANGE!!!
   print(f)
   if 'BX' in f:
     df = load_dataset.book_crossing(use_title=True)
@@ -60,7 +60,8 @@ for f in files[4:]: # TODO: CHANGE RANGE!!!
 
   models = [
             TFIDFKNN(config),
-            Word2VecKNN(config, pretrained=True)
+            Word2VecKNN(config, glove=True),
+            Word2VecKNN(config, glove=False)
           ]
   
   test_u, test_ucands = build_candidates_set(test_ur, total_train_ur, config)

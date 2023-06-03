@@ -41,25 +41,27 @@ def get_tf_idf(title_arr):
 
 def get_w2v(title_arr):
   title_arr = title_arr.fillna("empty")
-  clean_tokens = [tokenize(i) for i in title_arr]
-  vectorizer = Word2Vec(clean_tokens)
-  return vectorizer, clean_tokens
+  model = gensim.downloader.load('word2vec-google-news-300')
+  
+  return model, __get_vectors(model, title_arr)
 
-def get_pretrained_w2v(title_arr):
+def get_glove_w2v(title_arr):
   title_arr = title_arr.fillna("empty")
   model = gensim.downloader.load('glove-twitter-100')
-  # Clean title_tokens
+
+  return model, __get_vectors(model, title_arr)
+
+
+def __get_vectors(model, titles):
   def_vect = np.zeros(model.vector_size)
-  title_arr = title_arr.fillna("empty")
-  clean_tokens = [tokenize(i) for i in title_arr]
-  title_mat = np.zeros((len(title_arr), model.vector_size))
+  titles = titles.fillna("empty")
+  clean_tokens = [tokenize(i) for i in titles]
+  title_mat = np.zeros((len(titles), model.vector_size))
   for idx, title in enumerate(clean_tokens):
     # title_vec = def_vect
     for token in title:
       title_mat[idx] += model[token] if token in model else def_vect
-      
-
-  return model, title_mat
+  return title_mat
 
 if __name__ == '__main__':
   df = pd.read_csv('../../data/steam-200k.csv')

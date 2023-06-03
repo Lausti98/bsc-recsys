@@ -2,7 +2,7 @@
 import numpy as np
 import pandas as pd
 
-from src.feature_extraction.vectorize import get_tf_idf, get_w2v, get_pretrained_w2v
+from src.feature_extraction.vectorize import get_tf_idf, get_w2v, get_glove_w2v
 
 from sklearn.neighbors import NearestNeighbors
 from sklearn.metrics.pairwise import cosine_similarity
@@ -106,13 +106,13 @@ class TFIDFKNN:
 
 
 class Word2VecKNN:
-  def __init__(self, config, pretrained=False, similarity_method='cosine') -> None:
+  def __init__(self, config, glove=False, similarity_method='cosine') -> None:
     self.K = config['topk']
     self.maxk = config['maxk']
     self.title_col = config['title_col']
     self.user_num = config['user_num']
     self.item_num = config['item_num']
-    self.pretrained = pretrained
+    self.glove = glove
     self.similarity_method = similarity_method
   
   def fit(self, X):
@@ -127,8 +127,8 @@ class Word2VecKNN:
     interactions = convert_df(self.user_num, self.item_num, X).T
     self.interactions = interactions
 
-    if self.pretrained or self.similarity_method == 'wordmover':
-      self.w2v_model, self.title_mat = get_pretrained_w2v(unique_items[self.title_col])
+    if self.glove:
+      self.w2v_model, self.title_mat = get_glove_w2v(unique_items[self.title_col])
     else:
       self.w2v_model, self.title_mat = get_w2v(unique_items[self.title_col])
 
@@ -189,7 +189,7 @@ class Word2VecKNN:
   def _switch_similarity_method(self, title_tokens, title):
     if self.similarity_method == 'wordmover':
       sim = self.w2v_model.wmdistance(title_tokens, title)
-    elif self.pretrained:
+    elif self.glove:
       sim = self.w2v_model.n_similarity(title_tokens, title)
     else:
       sim = self.w2v_model.wv.n_similarity(title_tokens, title)
@@ -213,4 +213,4 @@ class Word2VecKNN:
     return user_embedding.reshape(1,-1)
   
   def __str__(self) -> str:
-    return f'Word2Vec (K={self.K}, pretrained={self.pretrained})'
+    return f'Word2Vec (K={self.K}, glove={self.glove})'
