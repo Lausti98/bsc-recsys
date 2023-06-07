@@ -18,6 +18,8 @@ Navigate into ``` src/benchmarks``` and execute files
 
 ```python content_based.py```
 
+```python hybrid.py```
+
 Both files output the results for the algorithms for collaborative filtering and content based recommendation respectively.
 
 
