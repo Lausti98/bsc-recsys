@@ -7,7 +7,7 @@ To ensure the requirements for the project is aligned when executing the code, a
 * ```$ python -m venv env```
 * ```$ source env/bin/activate```
 
-Once the virtual enviroment is activated, the requirements is installed by executing: 
+Once the virtual enviroment is activated, the requirements are installed by executing: 
 * ```$ python -m pip install -r requirements.txt```
 ### 2. Run the experiments
 Place the data folder from ERDA in place of ```./data``` folder.
