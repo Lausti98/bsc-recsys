@@ -3,6 +3,7 @@
 ## How to execute experiments
 ### 1. Initialize virtual environment
 To ensure the requirements for the project is aligned when executing the code, a virtual enviroment should be created, following the steps below: 
+* Navigate to the top-level directory of the project
 * ```$ python -m venv env```
 * ```$ source env/bin/activate```
 
