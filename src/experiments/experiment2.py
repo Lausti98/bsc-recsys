@@ -15,7 +15,7 @@ from daisy.utils.utils import get_ur, build_candidates_set
 from daisy.utils.metrics import NDCG, F1, Recall, Precision, HR
 
 from src.dataloader import load_dataset
-from src.algorithms import itemknn, slim, matrix_factorization, cbknn
+from src.algorithms import itemknn, slim, matrix_factorization, cbknn, hybrid
 from src.preprocessing import preprocessor
 from src.utils import result_visualizer
 
@@ -37,7 +37,7 @@ if __name__ == '__main__':
   logger.info(config)
   config['logger'] = logger
   config['topk'] = 20
-  config['maxk'] = 100
+  config['maxk'] = 150
   config['title_col'] = 'title'
 
 
@@ -45,6 +45,52 @@ if __name__ == '__main__':
   for f in data_files[0:]: # TODO: CHANGE to 0
     print(f"loading file {f}")
     df = load_dataset.load_by_filepath(f, use_title=True)
+    if 'BX' in f:
+      # SLiM params
+      slim_alpha=0.2
+      elastic=0.1
+      # ItemKNN params
+      config['topk']=50
+      # Weighted params
+      w_alpha = 0.1
+      # Switching params
+      cf_modelname = 'slim'
+      c = 5
+      co = 'item'
+    elif 'rating_only' in f:
+      # SLiM params
+      slim_alpha=0.01
+      elastic=0.1
+      # ItemKNN params
+      config['topk']=30
+
+      if 'fashion' in f:
+        #weighted params
+        w_alpha = 0.2
+        # Switching params
+        cf_modelname = 'slim'
+        c = 15
+        co = 'item'
+      else:
+        w_alpha = 0.6
+        # Switching params
+        c = 20
+        co = 'item'
+        if 'prime' in f:
+          cf_modelname = 'itemknn'
+        cf_modelname = 'slim'
+    elif 'steam' in f:
+      slim_alpha=0.01
+      elastic=0.1
+
+      config['topk']=30
+
+      w_alpha = 0.1
+
+      cf_modelname = 'slim'
+      c = 3
+      co = 'user'
+
     for x in range(3,15): # TODO: CHANGE TO 3
       f_df = preprocessor.proces(df, k_filter=x)
       print('dataset processed')
@@ -65,8 +111,19 @@ if __name__ == '__main__':
       print('initializing model')
       # initialize model
       # model = itemknn.ItemKNN(config, K=config['topk'])
-      # model = slim.SLiMRec(config, elastic=0.1, alpha=0.2)
-      model = cbknn.TFIDFKNN(config)
+      model = slim.SLiMRec(config, elastic=0.1, alpha=slim_alpha)
+      # model = cbknn.TFIDFKNN(config)
+      # model = hybrid.Weighted(config,
+      #                         cb_model=cbknn.TFIDFKNN(config),
+      #                         cf_model=slim.SLiMRec(config, elastic=elastic, alpha=slim_alpha),
+      #                         alpha=w_alpha
+      #                         )
+      # model = hybrid.Switch(config,
+      #                         cb_model=cbknn.TFIDFKNN(config),
+      #                         cf_model=slim.SLiMRec(config, elastic=elastic, alpha=slim_alpha) if cf_modelname == 'slim' else itemknn.ItemKNN(config, K=config['topk']),
+      #                         cutoff=c,
+      #                         cutoff_on=co
+      #                         )
       # model = cbknn.Word2VecKNN(config, pretrained=True)
       print('fitting model')
       model.fit(train)

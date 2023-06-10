@@ -6,7 +6,7 @@ import numpy as np
 from src.dataloader import load_dataset
 from src.preprocessing.data_filter import k_core_filter
 from src.preprocessing import preprocessor
-from src.algorithms import popularity, itemknn, slim, item2vec
+from src.algorithms import popularity, itemknn, slim, item2vec, hybrid
 from src.algorithms.cbknn import TFIDFKNN, Word2VecKNN
 from src.utils import result_visualizer, utils
 
@@ -41,15 +41,55 @@ files = [f for f in listdir(mypath) if isfile(join(mypath, f)) and f.endswith('.
 for f in files[0:]: # TODO: CHANGE RANGE!!!
   print(f)
   # Load dataset
+  df = load_dataset.load_by_filepath(f, use_title=True)
   if 'BX' in f:
-    df = load_dataset.book_crossing(use_title=True)
     df = preprocessor.proces(df, k_filter=10)
-  else:
-    if 'rating_only' in f:
-      df = load_dataset.amazon(f[:-16], use_title=True)
-    elif 'steam' in f:
-      df = load_dataset.steam(use_title=True)
+    # SLiM params
+    slim_alpha=0.2
+    elastic=0.1
+    # ItemKNN params
+    config['topk']=50
+    # Weighted params
+    w_alpha = 0.1
+    # Switching params
+    cf_modelname = 'slim'
+    c = 5
+    co = 'item'
+  elif 'rating_only' in f:
     df = preprocessor.proces(df)
+    # SLiM params
+    slim_alpha=0.01
+    elastic=0.1
+    # ItemKNN params
+    config['topk']=30
+
+    if 'fashion' in f:
+      #weighted params
+      w_alpha = 0.2
+      # Switching params
+      cf_modelname = 'slim'
+      c = 15
+      co = 'item'
+    else:
+      w_alpha = 0.6
+      # Switching params
+      c = 20
+      co = 'item'
+      if 'prime' in f:
+        cf_modelname = 'itemknn'
+      cf_modelname = 'slim'
+  elif 'steam' in f:
+    df = preprocessor.proces(df)
+    slim_alpha=0.01
+    elastic=0.1
+
+    config['topk']=30
+
+    w_alpha = 0.1
+
+    cf_modelname = 'slim'
+    c = 3
+    co = 'user'
 
   user_num = df['user'].nunique()
   item_num = df['item'].nunique()
@@ -71,49 +111,45 @@ for f in files[0:]: # TODO: CHANGE RANGE!!!
 
   models = [
             itemknn.ItemKNN(config, K=50),
-            slim.SLiMRec(config, elastic=0.1, alpha=0.2),
+            slim.SLiMRec(config, elastic=0.1, alpha=slim_alpha),
             TFIDFKNN(config),
+            
+            hybrid.Weighted(config,
+                cb_model=TFIDFKNN(config),
+                cf_model=slim.SLiMRec(config, elastic=elastic, alpha=slim_alpha),
+                alpha=w_alpha
+                ),
+            hybrid.Switch(config,
+                cb_model=TFIDFKNN(config),
+                cf_model=slim.SLiMRec(config, elastic=elastic, alpha=slim_alpha) if cf_modelname == 'slim' else itemknn.ItemKNN(config, K=config['topk']),
+                cutoff=c,
+                cutoff_on=co
+                )
             # Word2VecKNN(config),
             # Word2VecKNN(config, pretrained=True)
           ]
   
   test_u, test_ucands = build_candidates_set(test_ur, total_train_ur, config)
-  # metrics = ['n']
-  results = {}
-  results['dataset'] = f
-  results['metrics'] = ['NDCG_10', 'NDCG_20', 'NDCG', 'Precision_10', 'Precision_20', 'Precision', 'Recall', 'Hit-Rate_10', 'Hit-Rate_20']
-  
+
   p = []
   for m in models:
     m.fit(train)
     ranks = m.rank(test)
 
-    scores = np.zeros(50)
-    for i in range(1,50):
+    scores = np.zeros(20)
+    for i in range(1,20):
       i_ranks = ranks[:,:i]
       i_ndcg = NDCG(test_ur, i_ranks, test_u)
       scores[i] = i_ndcg
     
-    plt.plot(scores, label=str(m))
+    if isinstance(m, hybrid.Switch):
+      plt.plot(scores, label='Hybrid Switch')
+    elif isinstance(m, hybrid.Weighted):
+      plt.plot(scores, label='Hybrid Weighted')
+    else:
+      plt.plot(scores, label=str(m))
   plt.title(f)
   plt.xlabel('k')
   plt.ylabel('ndcg@k')
   plt.legend(loc ="lower right")
   plt.show()
-    
-
-
-  #   ranks_10 = ranks[:,:10]
-  #   ranks_20 = ranks[:,:20]
-  #   ndcg_10 = NDCG(test_ur, ranks_10, test_u)
-  #   ndcg_20 = NDCG(test_ur, ranks_20, test_u)
-  #   ndcg_full = NDCG(test_ur, ranks, test_u)
-  #   precision_10 = Precision(test_ur, ranks_10, test_u)
-  #   precision_20 = Precision(test_ur, ranks_20, test_u)
-  #   precision = Precision(test_ur, ranks, test_u)
-  #   recall = Recall(test_ur, ranks, test_u)
-  #   hr_10 = HR(test_ur, ranks_10, test_u)
-  #   hr_20 = HR(test_ur, ranks_20, test_u)
-  #   results[str(m)] = [ndcg_10, ndcg_20, ndcg_full, precision_10, precision_20, precision, recall, hr_10, hr_20]
-
-  # result_visualizer.build(results)

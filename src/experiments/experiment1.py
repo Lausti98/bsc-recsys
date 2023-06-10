@@ -1,3 +1,4 @@
+#pylint: skip-file
 """
   Module performs experiment where the datasets are filtered by users that
   have 1 interaction, 2 interactions and so forth while doing testing
@@ -83,7 +84,19 @@ if __name__ == '__main__':
   for f in data_files[0:]:
     print(f"loading file {f}")
     df = load_dataset.load_by_filepath(f, use_title=True)
-    df = preprocessor.proces(df, k_filter=4) # must filter 2 due to memory restrictions
+    if 'BX' in f:
+      slim_alpha = 0.2
+    elif 'fashion' in f:
+      slim_alpha = 0.01
+    elif 'prime' in f:
+      slim_alpha = 0.01
+    elif 'software' in f:
+      slim_alpha = 0.001
+    elif 'steam' in f:
+      slim_alpha = 0.01
+
+    
+    df = preprocessor.proces(df, k_filter=4) # must filter 4 due to memory restrictions
     print('dataset processed')
 
     user_num = df['user'].nunique()
@@ -102,9 +115,9 @@ if __name__ == '__main__':
     print('initializing model')
     # initialize model
     # model = itemknn.ItemKNN(config, K=config['topk'])
-    # model = slim.SLiMRec(config, elastic=0.1, alpha=0.2)
+    model = slim.SLiMRec(config, elastic=0.1, alpha=slim_alpha)
     # model = cbknn.TFIDFKNN(config)
-    model = cbknn.Word2VecKNN(config, pretrained=True)
+    # model = cbknn.Word2VecKNN(config, pretrained=True)
     print('fitting model')
     model.fit(train)
     print('model fitted')
@@ -115,7 +128,7 @@ if __name__ == '__main__':
       results['metrics'] = ['NDCG_10', 'NDCG_20', 'NDCG', 'Precision_10', 'Precision_20', 'Precision', 'Recall', 'Hit-Rate_10', 'Hit-Rate_20']
       print(f'ranking for num interactions: {x}')
       # filter the users in test set with x num
-      filtered_test = filter_num_interactions_df(df, test, x, user=False)
+      filtered_test = filter_num_interactions_df(df, test, x, user=True)
       if len(filtered_test) > 0:
         # Ground truths
         test_ur = get_ur(filtered_test)
