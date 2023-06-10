@@ -2,8 +2,6 @@
 import pandas as pd
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.preprocessing import LabelEncoder
-from gensim.models import Word2Vec
 import gensim.downloader
 import nltk
 from nltk.tokenize import word_tokenize

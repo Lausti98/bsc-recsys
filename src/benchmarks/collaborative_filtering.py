@@ -24,7 +24,7 @@ config['topk'] = 100
 
 files = get_csv_data_files()
 
-for f in files[4:]:
+for f in files:
   # Load dataset
   df = load_by_filepath(f, use_title=False)
   if 'BX' in f:

@@ -61,7 +61,3 @@ def load_by_filepath(f_path, use_title=False):
   
   return df
     
-
-if __name__ == '__main__':
-  a_df = amazon('amazon_fashion', use_title=True)
-  print(a_df.head())

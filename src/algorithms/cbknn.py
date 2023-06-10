@@ -2,7 +2,7 @@
 import numpy as np
 import pandas as pd
 
-from src.feature_extraction.vectorize import get_tf_idf, get_w2v, get_glove_w2v
+from src.feature_extraction.vectorize import get_tf_idf, get_w2v
 
 from sklearn.neighbors import NearestNeighbors
 from sklearn.metrics.pairwise import cosine_similarity

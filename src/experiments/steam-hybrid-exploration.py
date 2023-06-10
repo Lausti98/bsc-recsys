@@ -5,7 +5,7 @@ import numpy as np
 
 from src.dataloader import load_dataset
 from src.preprocessing import preprocessor
-from src.algorithms import popularity, itemknn, slim, item2vec
+from src.algorithms import popularity, itemknn, slim
 from src.algorithms.cbknn import TFIDFKNN, Word2VecKNN
 from src.algorithms.hybrid import Weighted
 

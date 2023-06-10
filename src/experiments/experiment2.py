@@ -3,16 +3,12 @@
   Module performs experiment where the datasets are filtered by users that
   have 1 interaction, 2 interactions and so forth while doing testing
 """
-import os
 from logging import getLogger
 
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from daisy.utils.config import init_config, init_seed, init_logger
 from daisy.utils.utils import get_ur, build_candidates_set
-from daisy.utils.metrics import NDCG, F1, Recall, Precision, HR
+from daisy.utils.metrics import NDCG, Recall, Precision, HR
 
 from src.dataloader import load_dataset
 from src.algorithms import itemknn, slim, matrix_factorization, cbknn, hybrid
@@ -42,8 +38,7 @@ if __name__ == '__main__':
 
 
 
-  for f in data_files[0:]: # TODO: CHANGE to 0
-    print(f"loading file {f}")
+  for f in data_files:
     df = load_dataset.load_by_filepath(f, use_title=True)
     if 'BX' in f:
       # SLiM params

@@ -3,16 +3,13 @@
   Module performs experiment where the datasets are filtered by users that
   have 1 interaction, 2 interactions and so forth while doing testing
 """
-import os
 from logging import getLogger
 
-import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from daisy.utils.config import init_config, init_seed, init_logger
 from daisy.utils.utils import get_ur, build_candidates_set
-from daisy.utils.metrics import NDCG, F1, Recall, Precision, HR
+from daisy.utils.metrics import NDCG, Recall, Precision, HR
 
 from src.dataloader import load_dataset
 from src.algorithms import itemknn, slim, matrix_factorization, cbknn
@@ -45,14 +42,9 @@ def filter_num_interactions_df(full_df, test_df, num_interactions, user=True):
   else:
     interaction_counts = full_df.groupby('item')['user'].count()
     keep_ids = interaction_counts[interaction_counts == num_interactions]
-    #print(interaction_counts)
-    #print(interaction_counts.unique())
-    #print(keep_ids)
     mask = test_df['item'].isin(keep_ids.index)
-    #print(mask)
 
   filtered_df = test_df.loc[mask]
-  #print(filtered_df)
   
   return filtered_df
 
@@ -60,7 +52,6 @@ def filter_num_interactions_df(full_df, test_df, num_interactions, user=True):
 if __name__ == '__main__':
   #df = load_dataset.amazon('software', use_title=True)
   df = load_dataset.steam()
-  print(df['user_id'].nunique())
   data_files = utils.get_csv_data_files()
 
   config = init_config()

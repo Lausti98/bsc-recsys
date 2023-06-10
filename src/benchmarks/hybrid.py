@@ -1,28 +1,23 @@
 # pylint: skip-file
-from os import listdir
-from os.path import isfile, join
-import numpy as np
-
 from src.dataloader.load_dataset import load_by_filepath
 from src.preprocessing import preprocessor
 from src.algorithms import itemknn, slim
 from src.algorithms.cbknn import TFIDFKNN
 from src.algorithms.hybrid import Switch, Weighted
 from src.utils import result_visualizer
+from src.utils.utils import get_csv_data_files
 from src.model_tuning.model_tuning import grid_search
 
 from daisy.utils.config import init_config, init_logger
 from daisy.utils.utils import get_ur, build_candidates_set
-from daisy.utils.metrics import NDCG, F1, Recall, Precision, HR
+from daisy.utils.metrics import NDCG, Recall, Precision, HR
 from logging import getLogger
 
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import MinMaxScaler
 config = init_config()
 config['algo_name'] = 'itemknn'
 
 
-''' init logger '''
 config['state'] = 'warning' # silence info logs
 init_logger(config)
 logger = getLogger()
@@ -32,11 +27,9 @@ config['topk'] = 50
 config['maxk'] = 500
 config['title_col'] = 'title'
 
-'''Load and process datasets...'''
-mypath = '../../data/'
-files = [f for f in listdir(mypath) if isfile(join(mypath, f)) and f.endswith('.csv')]
+files = get_csv_data_files()
 
-for f in files[2:]: # TODO: CHANGE RANGE!!!
+for f in files: 
   df = load_by_filepath(f, use_title=True)
   # Load dataset
   if 'BX' in f:
@@ -86,7 +79,6 @@ for f in files[2:]: # TODO: CHANGE RANGE!!!
           ]
   
   test_u, test_ucands = build_candidates_set(test_ur, total_train_ur, config)
-  # metrics = ['n']
   results = {}
   results['dataset'] = f
   results['metrics'] = ['NDCG_10', 'NDCG_20', 'NDCG', 'Precision_10', 'Precision_20', 'Precision', 'Recall', 'Hit-Rate_10', 'Hit-Rate_20']

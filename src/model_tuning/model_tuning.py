@@ -1,13 +1,10 @@
 # pylint: skip-file
 from sklearn.model_selection import StratifiedKFold
 from itertools import product
-import pandas as pd
 import numpy as np
 
 from daisy.utils.utils import get_ur, build_candidates_set
-from daisy.utils.metrics import NDCG, F1, Recall, Precision, HR
-
-from src.algorithms.slim import SLiMRec
+from daisy.utils.metrics import NDCG
 
 
 def grid_search(data, clf, config, param_grid, k_folds=5, verbose=False):

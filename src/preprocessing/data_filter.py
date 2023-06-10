@@ -1,6 +1,4 @@
 #pylint: skip-file
-import pandas as pd
-
 def k_core_filter(X, k):
   """Get data with over k interactions on items and users""" 
   usr_cnt = X.groupby(['user_id'], as_index=False)['item_id'].count()

@@ -14,8 +14,6 @@ class Switch:
     self.K = config['topk']
     self.cutoff = cutoff
     self.co = cutoff_on
-    print(self.item_num)
-    print(self.user_num)
 
   def fit(self, X):
     X = X.copy()

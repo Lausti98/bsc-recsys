@@ -3,8 +3,6 @@ import numpy as np
 from sklearn.neighbors import NearestNeighbors
 from sklearn.metrics.pairwise import cosine_similarity
 from daisy.model.KNNCFRecommender import convert_df
-from pandas.api.types import CategoricalDtype
-from scipy.sparse import csr_matrix
 from sklearn.preprocessing import MinMaxScaler
 
 

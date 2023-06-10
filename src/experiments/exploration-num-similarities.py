@@ -4,16 +4,11 @@ from os.path import isfile, join
 import numpy as np
 
 from src.dataloader.load_dataset import load_by_filepath
-from src.preprocessing.data_filter import k_core_filter
 from src.preprocessing import preprocessor
-from src.algorithms import popularity, itemknn, slim, item2vec
-from src.algorithms.cbknn import TFIDFKNN, Word2VecKNN
-from src.algorithms.hybrid import Weighted
-from src.utils import result_visualizer, utils
+from src.algorithms import itemknn, slim
 
 from daisy.utils.config import init_config, init_seed, init_logger
 from daisy.utils.utils import get_ur, build_candidates_set
-from daisy.utils.metrics import NDCG, F1, Recall, Precision, HR
 from logging import getLogger
 
 from sklearn.model_selection import train_test_split

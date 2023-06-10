@@ -4,15 +4,13 @@ from os.path import isfile, join
 import numpy as np
 
 from src.dataloader import load_dataset
-from src.preprocessing.data_filter import k_core_filter
 from src.preprocessing import preprocessor
-from src.algorithms import popularity, itemknn, slim, item2vec, hybrid
+from src.algorithms import popularity, itemknn, slim, hybrid
 from src.algorithms.cbknn import TFIDFKNN, Word2VecKNN
-from src.utils import result_visualizer, utils
 
 from daisy.utils.config import init_config, init_seed, init_logger
 from daisy.utils.utils import get_ur, build_candidates_set
-from daisy.utils.metrics import NDCG, F1, Recall, Precision, HR
+from daisy.utils.metrics import NDCG
 from logging import getLogger
 
 from sklearn.model_selection import train_test_split
@@ -38,8 +36,7 @@ config['title_col'] = 'title'
 mypath = '../../data/'
 files = [f for f in listdir(mypath) if isfile(join(mypath, f)) and f.endswith('.csv')]
 
-for f in files[0:]: # TODO: CHANGE RANGE!!!
-  print(f)
+for f in files:
   # Load dataset
   df = load_dataset.load_by_filepath(f, use_title=True)
   if 'BX' in f:
