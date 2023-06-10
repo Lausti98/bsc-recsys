@@ -12,11 +12,3 @@ def k_core_filter(X, k):
   X = X.query(f'cnt_item >= {k} and cnt_user >= {k}').reset_index(drop=True)
   X = X.drop(columns=['cnt_item', 'cnt_user'])
   return X
-
-if __name__ == '__main__':
-  df = pd.read_csv('../../data/software_rating_only.csv', index_col=0, skiprows=1, names=['user_id', 'item_id', 'rating', 'title'])#.drop(columns=[0])
-  print(df.head())
-  print(df.shape)
-  f_df = k_core_filter(df, 3)
-  print(f_df.head())
-  print(f_df.shape)

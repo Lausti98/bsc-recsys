@@ -91,7 +91,7 @@ if __name__ == '__main__':
       c = 3
       co = 'user'
 
-    for x in range(3,15): # TODO: CHANGE TO 3
+    for x in range(3,15):
       f_df = preprocessor.proces(df, k_filter=x)
       print('dataset processed')
 
@@ -124,7 +124,7 @@ if __name__ == '__main__':
       #                         cutoff=c,
       #                         cutoff_on=co
       #                         )
-      # model = cbknn.Word2VecKNN(config, pretrained=True)
+      # model = cbknn.Word2VecKNN(config)
       print('fitting model')
       model.fit(train)
       print('model fitted')
@@ -134,7 +134,7 @@ if __name__ == '__main__':
       results['metrics'] = ['NDCG_10', 'NDCG_20', 'NDCG', 'Precision_10', 'Precision_20', 'Precision', 'Recall', 'Hit-Rate_10', 'Hit-Rate_20']
       print(f'ranking for num interactions: {x}')
       # filter the users in test set with x num
-      # filtered_test = filter_dataset(df, x)
+      
       if len(test) > 0:
         # Ground truths
         test_ur = get_ur(test)
@@ -142,13 +142,12 @@ if __name__ == '__main__':
         test_u, test_ucands = build_candidates_set(test_ur, total_train_ur, config)
         # predict rankings for the users
         ranks = model.rank(test)
+        
         # report eval metrics
-
         ranks_10 = ranks[:,:10]
         ranks_20 = ranks[:,:20]
         ndcg_10 = NDCG(test_ur, ranks_10, test_u)
         ndcg_20 = NDCG(test_ur, ranks_20, test_u)
-        # ndcg_50 = NDCG(test_ur, ranks[:50], test_u)
         ndcg_full = NDCG(test_ur, ranks, test_u)
         precision_10 = Precision(test_ur, ranks_10, test_u)
         precision_20 = Precision(test_ur, ranks_20, test_u)
@@ -156,11 +155,8 @@ if __name__ == '__main__':
         recall = Recall(test_ur, ranks, test_u)
         hr_10 = HR(test_ur, ranks_10, test_u)
         hr_20 = HR(test_ur, ranks_20, test_u)
-        # f1 = F1(test_ur, ranks, test_u)
         results[str(model)] = [ndcg_10, ndcg_20, ndcg_full, precision_10, precision_20, precision, recall, hr_10, hr_20]
 
         result_visualizer.build(results)
-      
 
-    # plot_num_interactions(df, user=False, title=os.path.split(f)[1])
 

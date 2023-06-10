@@ -3,16 +3,15 @@ from os import listdir
 from os.path import isfile, join
 import numpy as np
 
-from src.dataloader import load_dataset
-from src.preprocessing.data_filter import k_core_filter
+from src.dataloader.load_dataset import load_by_filepath
 from src.preprocessing import preprocessor
-from src.algorithms import popularity, itemknn, slim, item2vec
-from src.algorithms.cbknn import TFIDFKNN, Word2VecKNN
+from src.algorithms import itemknn, slim
+from src.algorithms.cbknn import TFIDFKNN
 from src.algorithms.hybrid import Switch, Weighted
 from src.utils import result_visualizer
 from src.model_tuning.model_tuning import grid_search
 
-from daisy.utils.config import init_config, init_seed, init_logger
+from daisy.utils.config import init_config, init_logger
 from daisy.utils.utils import get_ur, build_candidates_set
 from daisy.utils.metrics import NDCG, F1, Recall, Precision, HR
 from logging import getLogger
@@ -22,8 +21,6 @@ from sklearn.preprocessing import MinMaxScaler
 config = init_config()
 config['algo_name'] = 'itemknn'
 
-''' init seed for reproducibility '''
-init_seed(config['seed'], config['reproducibility'])
 
 ''' init logger '''
 config['state'] = 'warning' # silence info logs
@@ -32,24 +29,31 @@ logger = getLogger()
 logger.warn(config)
 config['logger'] = logger
 config['topk'] = 50
-config['maxk'] = 100
+config['maxk'] = 500
 config['title_col'] = 'title'
 
 '''Load and process datasets...'''
 mypath = '../../data/'
 files = [f for f in listdir(mypath) if isfile(join(mypath, f)) and f.endswith('.csv')]
 
-for f in files[4:]: # TODO: CHANGE RANGE!!!
-  print(f)
+for f in files[2:]: # TODO: CHANGE RANGE!!!
+  df = load_by_filepath(f, use_title=True)
   # Load dataset
   if 'BX' in f:
-    df = load_dataset.book_crossing(use_title=True)
     df = preprocessor.proces(df, k_filter=10)
+    alpha=0.2
+    elastic=0.1
+    config['topk']=50
   else:
     if 'rating_only' in f:
-      df = load_dataset.amazon(f[:-16], use_title=True)
+      alpha=0.01
+      elastic=0.1
+      config['topk']=30
+
     elif 'steam' in f:
-      df = load_dataset.steam(use_title=True)
+      alpha=0.01
+      elastic=0.1
+      config['topk']=30
     df = preprocessor.proces(df)
 
   user_num = df['user'].nunique()
@@ -57,16 +61,7 @@ for f in files[4:]: # TODO: CHANGE RANGE!!!
   config['user_num'] = int(user_num)
   config['item_num'] = int(item_num)
   config['cand_num'] = int(item_num) # Use all items as candidate ranking
-  # config['maxk'] = 100
-  # config['topk'] = 50
-  # config['shrink'] = 0.0
-  # config['similarity'] = 'adjusted'
-  # config['normalize'] = False
 
-  # TODO: Remove dataframe filtering - only for testing purposes
-  # df = df.sample(frac=.4)
-  # scaler = MinMaxScaler()
-  # df['rating'] = scaler.fit_transform(df['rating'].values.reshape(-1,1))
   train, test = train_test_split(df, train_size=0.7, random_state=1)
 
   # Ground truths
@@ -77,15 +72,16 @@ for f in files[4:]: # TODO: CHANGE RANGE!!!
   models = [
             Switch(
               config=config,
-              cf_model=itemknn.ItemKNN(config, config['topk']),
+              cf_model=slim.SLiMRec(config, elastic=elastic, alpha=alpha),
               cb_model=TFIDFKNN(config),
-              cutoff=6,
-              cutoff_on='item'
+              cutoff=3,
+              cutoff_on='user'
             ),
             Weighted(
               config=config,
-              cf_model=itemknn.ItemKNN(config, config['topk']),
-              cb_model=TFIDFKNN(config)
+              cf_model=slim.SLiMRec(config, elastic=elastic, alpha=alpha),
+              cb_model=TFIDFKNN(config),
+              alpha=0.1
             )
           ]
   
@@ -98,17 +94,17 @@ for f in files[4:]: # TODO: CHANGE RANGE!!!
   p = []
   for m in models:
     if isinstance(m, Switch):
-      param_grid={'cutoff': [0, 5, 10, 15, 20, 2000], # 2, 5
+      param_grid={'cutoff': [0, 2, 5, 10, 15, 20, 2000],
                   'cutoff_on': ['item', 'user'],
                   'cf_model': [itemknn.ItemKNN(config, config['topk']),
-                               slim.SLiMRec(config, elastic=0.1, alpha=0.2)]}
+                               slim.SLiMRec(config, elastic=elastic, alpha=alpha)]}
       best_params = grid_search(train, m, config, param_grid, verbose=True)
       m.set_params(**best_params)
       print(f'grid search best params: {best_params}')
     elif isinstance(m, Weighted):
       param_grid={'alpha': [0.0, 0.2, 0.4, 0.6, 0.8, 1],
                   'cf_model': [itemknn.ItemKNN(config, config['topk']),
-                               slim.SLiMRec(config, elastic=0.1, alpha=0.2)]}
+                               slim.SLiMRec(config, elastic=elastic, alpha=alpha)]}
       best_params = grid_search(train, m, config, param_grid, verbose=True)
       m.set_params(**best_params)
       print(f'grid search best params: {best_params}')

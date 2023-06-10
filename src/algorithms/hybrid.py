@@ -20,6 +20,7 @@ class Switch:
   def fit(self, X):
     X = X.copy()
 
+    # Create user or item interaction counts
     if self.co == 'user':
       user_interaction_counts = X.groupby('user').count()['item']
       self.interaction_count = np.zeros(self.user_num)
@@ -31,6 +32,7 @@ class Switch:
       for item, val in item_interaction_counts.items():
         self.interaction_count[item] = val
 
+    # Instantiate scaler
     scaler = MinMaxScaler()
     self.scaler = scaler.fit(X['rating'].values.reshape(-1,1))
 
@@ -68,6 +70,7 @@ class Switch:
         return self.cf_model.full_rank(user)
       else:
         return self.cb_model.full_rank(user)
+
     elif self.co == 'item':
       cb_preds = self.cb_model.predict(user)[0]
       cb_preds = self.scaler.transform(cb_preds.reshape(-1,1)).flatten()
@@ -79,7 +82,6 @@ class Switch:
           scores[i] = cf_preds[i]
         else:
           scores[i] = cb_preds[i]
-      
 
       index_arr = np.argsort(scores).flatten()[::-1]
       ranks = index_arr[:self.K]
@@ -133,7 +135,7 @@ class Weighted:
     cf_scores = self.cf_model.predict(user)
     cf_scores = self.scaler.transform(cf_scores.reshape(-1,1)).flatten()
 
-    # combine scores
+    # Combine scores
     scores = self.alpha*cb_scores + (1-self.alpha)*cf_scores
 
     scores = np.array(scores)

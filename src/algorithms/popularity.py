@@ -8,14 +8,10 @@ class Popularity:
     self.model = MostPop(config)
 
   def fit(self, X):
-    #TODO: Do checks on the input DF/Interactionmatrix
-
     self.model.fit(X)
   
   def predict(self, X, user):
-    #TODO: Implement actual predictions 
-
-    return self.topk
+    pass
   
   def rank(self, test_df):
     t_users = test_df['user'].unique()

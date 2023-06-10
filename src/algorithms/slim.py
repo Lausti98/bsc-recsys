@@ -18,7 +18,6 @@ class SLiMRec:
     self.scale = scale
 
   def fit(self, X):
-    ## May need to do preprocessing steps on train data
     self.X = X.copy()
     if self.scale:
       scaler = MinMaxScaler()
@@ -27,11 +26,13 @@ class SLiMRec:
 
     self.model.fit(self.X)
 
+
   def predict(self, user, item=None):
     if item: 
       return self.model.predict(user, item)
     else:
       return self.model.A_tilde[user, :].A.squeeze()
+
 
   def rank(self, test_df):
     t_users = test_df['user'].unique()
@@ -43,9 +44,11 @@ class SLiMRec:
       ranks.append(self.model.full_rank(test_df['user']))
     
     return np.array(ranks)
-  
+
+
   def full_rank(self, user):
     return self.model.full_rank(user)
+
 
   def set_params(self, alpha=None, elastic=None):
     if alpha:
@@ -55,6 +58,12 @@ class SLiMRec:
       self.elastic = elastic
       self.config['elastic'] = elastic
     self.model = SLiM(self.config)
-    
+
+
+  def _get_num_similar(self, user):
+    sims = self.model.A_tilde[user, :].A.squeeze()
+    return np.count_nonzero(sims)
+  
+  
   def __str__(self) -> str:
     return f'SLiMRec(elastic={self.elastic}, alpha={self.alpha})'

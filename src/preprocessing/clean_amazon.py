@@ -1,7 +1,7 @@
 import pandas as pd
 from sklearn import preprocessing
 
-fname = 'Software.json'
+fname = 'Prime_Pantry.json'
 fpath = f'../../data/raw/{fname}'
 meta_fpath = f'../../data/raw/meta_{fname}'
 

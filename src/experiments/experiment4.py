@@ -126,7 +126,6 @@ for f in files[0:]: # TODO: CHANGE RANGE!!!
                 cutoff_on=co
                 )
             # Word2VecKNN(config),
-            # Word2VecKNN(config, pretrained=True)
           ]
   
   test_u, test_ucands = build_candidates_set(test_ur, total_train_ur, config)
@@ -151,5 +150,5 @@ for f in files[0:]: # TODO: CHANGE RANGE!!!
   plt.title(f)
   plt.xlabel('k')
   plt.ylabel('ndcg@k')
-  plt.legend(loc ="lower right")
+  plt.legend(loc ="best")
   plt.show()

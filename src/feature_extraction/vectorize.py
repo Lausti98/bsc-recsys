@@ -45,12 +45,6 @@ def get_w2v(title_arr):
   
   return model, __get_vectors(model, title_arr)
 
-def get_glove_w2v(title_arr):
-  title_arr = title_arr.fillna("empty")
-  model = gensim.downloader.load('glove-twitter-100')
-
-  return model, __get_vectors(model, title_arr)
-
 
 def __get_vectors(model, titles):
   def_vect = np.zeros(model.vector_size)
@@ -58,17 +52,6 @@ def __get_vectors(model, titles):
   clean_tokens = [tokenize(i) for i in titles]
   title_mat = np.zeros((len(titles), model.vector_size))
   for idx, title in enumerate(clean_tokens):
-    # title_vec = def_vect
     for token in title:
       title_mat[idx] += model[token] if token in model else def_vect
   return title_mat
-
-if __name__ == '__main__':
-  df = pd.read_csv('../../data/steam-200k.csv')
-  df = df.iloc[:, [0,1,3]]
-  df.columns.values[0:3] =['user_id', 'title', 'rating']
-  encoder = LabelEncoder()
-  df['user_id'] = encoder.fit_transform(df['user_id'])
-  df['item_id'] = encoder.fit_transform(df['title'])
-  vec2 = get_w2v(df['title'])
-  title_tokens = [tokenize(i) for i in df['title']]

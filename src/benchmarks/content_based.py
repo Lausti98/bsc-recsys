@@ -1,27 +1,22 @@
 # pylint: skip-file
-from os import listdir
-from os.path import isfile, join
-
-from src.dataloader import load_dataset
-from src.preprocessing.data_filter import k_core_filter
+# SRC imports
+from src.dataloader.load_dataset import load_by_filepath
 from src.preprocessing import preprocessor
 from src.algorithms.cbknn import TFIDFKNN, Word2VecKNN
 from src.utils import result_visualizer
 from src.utils.utils import get_csv_data_files
 
-from daisy.utils.config import init_config, init_seed, init_logger
+# DaisyRec imports
+from daisy.utils.config import init_config, init_logger
 from daisy.utils.utils import get_ur, build_candidates_set
-from daisy.utils.metrics import NDCG, F1, Recall, Precision, HR
+from daisy.utils.metrics import NDCG, Recall, Precision, HR
 from logging import getLogger
 
 from sklearn.model_selection import train_test_split
+
 config = init_config()
 
-''' init seed for reproducibility '''
-init_seed(config['seed'], config['reproducibility'])
-
-''' init logger '''
-config['state'] = 'warning' # silence info logs
+config['state'] = 'warning' 
 init_logger(config)
 logger = getLogger()
 logger.warn(config)
@@ -30,19 +25,14 @@ config['topk'] = 50
 config['maxk'] = 150
 config['title_col'] = 'title'
 
-'''Load and process datasets...'''
+# Load and process datasets
 files = get_csv_data_files()
 
-for f in files[0:]: # TODO: CHANGE RANGE!!!
-  print(f)
+for f in files:
+  df = load_by_filepath(f, use_title=True)
   if 'BX' in f:
-    df = load_dataset.book_crossing(use_title=True)
     df = preprocessor.proces(df, k_filter=10)
   else:
-    if 'rating_only' in f:
-      df = load_dataset.amazon(f[:-16], use_title=True)
-    elif 'steam' in f:
-      df = load_dataset.steam(use_title=True)
     df = preprocessor.proces(df)
 
   user_num = df['user'].nunique()
@@ -60,8 +50,7 @@ for f in files[0:]: # TODO: CHANGE RANGE!!!
 
   models = [
             TFIDFKNN(config),
-            Word2VecKNN(config, glove=True),
-            Word2VecKNN(config, glove=False)
+            Word2VecKNN(config)
           ]
   
   test_u, test_ucands = build_candidates_set(test_ur, total_train_ur, config)
@@ -75,6 +64,7 @@ for f in files[0:]: # TODO: CHANGE RANGE!!!
     m.fit(train)
     ranks = m.rank(test)
 
+    # Establish evaluation scores
     ranks_10 = ranks[:,:10]
     ranks_20 = ranks[:,:20]
     ndcg_10 = NDCG(test_ur, ranks_10, test_u)

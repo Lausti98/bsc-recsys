@@ -19,15 +19,17 @@ class TFIDFKNN:
     self.model = NearestNeighbors(n_neighbors=self.K, metric='cosine')
 
   def fit(self, X):
+    # Get user-item interaction matrix
     interactions = convert_df(self.user_num, self.item_num, X).T
+    self.interactions = interactions
+
+    # find unique items
     _items = X.drop_duplicates(subset='item')
     unique_items = pd.DataFrame({'item': range(self.item_num)})
-    
     unique_items = unique_items.merge(_items, on='item', how='outer')
     
     self.title_mat = get_tf_idf(unique_items[self.title_col])
 
-    self.interactions = interactions
   
   def get_neighbors(self, X, verbose=False):
     """Get k closest neighbors by their cosine similarity"""
@@ -69,15 +71,18 @@ class TFIDFKNN:
 
 
   def full_rank(self, user):
+    # Find user embeddings
     items_rated_by_user = self.interactions[:, user].A.squeeze().nonzero()[0]
     user_embedding = self.get_user_embedding(items_rated_by_user, user)
 
     similarities, neighbors = self.get_neighbors(user_embedding)
 
+    # Filter items already rated by use
     seen_items = np.in1d(neighbors, items_rated_by_user).nonzero()[0]
     similarities = np.array(np.delete(similarities, seen_items))
     neighbors = np.array(np.delete(neighbors, seen_items))
 
+    # Find neighbouring items
     index_arr = np.argsort(similarities).flatten()[::-1]
     neighbors = neighbors[index_arr[:self.K]]
 
@@ -102,18 +107,16 @@ class TFIDFKNN:
     return user_embedding.reshape(1,-1)
   
   def __str__(self) -> str:
-    return f'content based TF-IDF(K={self.K})'
+    return f'content-based TF-IDF(K={self.K})'
 
 
 class Word2VecKNN:
-  def __init__(self, config, glove=False, similarity_method='cosine') -> None:
+  def __init__(self, config) -> None:
     self.K = config['topk']
     self.maxk = config['maxk']
     self.title_col = config['title_col']
     self.user_num = config['user_num']
     self.item_num = config['item_num']
-    self.glove = glove
-    self.similarity_method = similarity_method
   
   def fit(self, X):
     _items = X.drop_duplicates(subset='item')
@@ -127,10 +130,8 @@ class Word2VecKNN:
     interactions = convert_df(self.user_num, self.item_num, X).T
     self.interactions = interactions
 
-    if self.glove:
-      self.w2v_model, self.title_mat = get_glove_w2v(unique_items[self.title_col])
-    else:
-      self.w2v_model, self.title_mat = get_w2v(unique_items[self.title_col])
+    
+    self.w2v_model, self.title_mat = get_w2v(unique_items[self.title_col])
 
 
   def get_neighbors(self, X, verbose=False):
@@ -185,16 +186,7 @@ class Word2VecKNN:
     neighbors = neighbors[index_arr[:self.K]]
     
     return neighbors
-  
-  def _switch_similarity_method(self, title_tokens, title):
-    if self.similarity_method == 'wordmover':
-      sim = self.w2v_model.wmdistance(title_tokens, title)
-    elif self.glove:
-      sim = self.w2v_model.n_similarity(title_tokens, title)
-    else:
-      sim = self.w2v_model.wv.n_similarity(title_tokens, title)
-    
-    return sim
+
   
   def get_user_embedding(self, items_rated_by_user, user):
     if len(items_rated_by_user) == 0:
@@ -212,5 +204,13 @@ class Word2VecKNN:
     
     return user_embedding.reshape(1,-1)
   
+  def _get_num_similar(self, user):
+    items_rated_by_user = self.interactions[:, user].A.squeeze().nonzero()[0]
+    user_embedding = self.get_user_embedding(items_rated_by_user, user)
+    
+    similarities, _ = self.get_neighbors(user_embedding)
+    
+    return np.count_nonzero(similarities)
+
   def __str__(self) -> str:
-    return f'Word2Vec (K={self.K}, glove={self.glove})'
+    return f'content-based Word2Vec (K={self.K})'

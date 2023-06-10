@@ -40,8 +40,7 @@ class ItemKNN:
     self.data = X_transpose.transpose()
     self.user_offset = means[0,:]
 
-    # prediction matrix
-    #item_similarities = cosine_similarity(self.data, self.data, dense_output=False)
+    # Compute prediction matrix
     item_similarities = self._topk_similaritites()
     self.pred_mat = item_similarities.dot(X)
 
@@ -65,19 +64,6 @@ class ItemKNN:
     return distances, neighbors
   
   def predict(self, user, item=None):
-
-  #   # Get the nearest neighbors
-  #   dist, neighbors = self.get_neighbors(item)
-
-  #   # Calculate prediction based on neighbors
-  #   rating = 0
-  #   for d, n in zip(dist, neighbors):
-  #     rating += self.data[n,user]*d
-  #   prediction = (rating/(dist.sum()+(dist.sum()==0.0))) + self.user_offset[0, user]
-
-  #   return prediction if prediction != None else 0.0
-
-  # def pred_from_mat(self, user, item):
     if item:
       return self.pred_mat[item, user]
     else:
@@ -107,7 +93,6 @@ class ItemKNN:
     return sims.tocsr()
 
 
-
   def full_rank(self, user):
     scores = self.pred_mat[:, user].A.squeeze()
     return np.argsort(-scores)[:self.K]
@@ -116,5 +101,10 @@ class ItemKNN:
   def set_params(self, K=10):
     self.K = K
 
+
+  def _get_num_similar(self, user):
+    sims = self.pred_mat[:,user].A.squeeze()
+    return np.count_nonzero(sims)
+    
   def __str__(self) -> str:
     return f'ItemKNN(K={self.K})'

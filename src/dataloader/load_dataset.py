@@ -46,7 +46,6 @@ def book_crossing(use_title=False):
                           sep=';')
     meta_df.rename(columns={'ISBN': 'item_id', 'Book-Title': 'title'}, inplace=True)
     df = df.merge(meta_df[['item_id', 'title']], on='item_id', how='inner')
-    # df['title'] = meta_df['Book-Title']
 
   return df
 

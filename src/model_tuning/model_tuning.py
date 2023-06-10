@@ -39,18 +39,3 @@ def grid_search(data, clf, config, param_grid, k_folds=5, verbose=False):
       print(f'{str(clf)} - score: {mean_score} - best score: {best_score}')
   
   return best_params
-
-
-if __name__ == '__main__':
-  from src.dataloader import load_dataset
-  df = load_dataset.amazon('amazon_fashion')
-  print(df)
-  param_grid = {'alpha': [1.0, 0.8, 0.6, 0.4, 0.2],
-                'elastic': [0.1, 0.3, 0.5, 0.7, 0.9]}
-  train_X = df.drop(columns='rating')
-  train_y = df['rating']
-  grid_search(train_X, train_y, 'classifier', param_grid)
-  
-  for values in product(*param_grid.values()):
-    print(zip(param_grid.keys(), values))
-    print(dict(zip(param_grid.keys(), values)))
